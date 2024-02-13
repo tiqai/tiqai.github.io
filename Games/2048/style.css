@@ -1,0 +1,82 @@
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: #333;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+}
+
+#game-board {
+	--cell-size: 19vmin;
+	--cell-gap: 2vmin;
+
+	position: relative;
+	display: grid;
+	grid-template-columns: repeat(4, var(--cell-size));
+	grid-template-rows: repeat(4, var(--cell-size));
+	gap: var(--cell-gap);
+	border-radius: 1vmin;
+}
+
+#score {
+	position: absolute;
+	justify-content: center;
+	align-items: center;
+	top: 0;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 7.5vmin;
+	color: aliceblue;
+}
+
+.cell {
+	background: #444;
+	border-radius: 1vmin;
+}
+
+.tile {
+	--y: 0;
+	--x: 0;
+
+	position: absolute;
+	top: calc(var(--y) * (var(--cell-size) + var(--cell-gap)));
+	left: calc(var(--x) * (var(--cell-size) + var(--cell-gap)));
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 20vmin;
+	height: 20vmin;
+	border-radius: 1vmin;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 7.5vmin;
+	font-weight: bold;
+	background-color: hsl(25, 60%, var(--bg-lightness));
+	color: hsl(25, 60%, var(--text-lightness));
+	transition: 100ms;
+	animation: show 200ms;
+}
+
+@keyframes show {
+	0% {
+		opacity: 0.5;
+		transform: scale(0);
+	}
+}
+
+#main-menu {
+	position: absolute;
+	background: #222;
+	color: antiquewhite;
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	font-size: 3vmin;
+	text-align: center;
+	border-radius: 10px;
+	padding: 1vmin 4vmin;
+	margin: -95.5vmin 0 0 -187vmin;
+}
