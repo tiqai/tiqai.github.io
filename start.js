@@ -8,6 +8,10 @@ function start2048() {
 	window.open('./Games/2048/index.html', '_self')
 }
 
+function startLinkDots() {
+	window.open('./Games/LinkDots/index.html', '_self')
+}
+
 async function voteBan() {
 	if (isLocked) return
 
