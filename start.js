@@ -8,7 +8,7 @@ function start2048() {
 	window.open('./Games/2048/index.html', '_self')
 }
 
-function startLinkDots() {
+function startLinkingDots() {
 	window.open('./Games/LinkDots/index.html', '_self')
 }
 
