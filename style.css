@@ -9,6 +9,15 @@ body {
 	overflow: hidden;
 }
 
+#canvas {
+	position: absolute;
+	background: #000;
+	width: 100vw;
+	height: 100vh;
+	top: 0;
+	left: 0;
+}
+
 div#buttons {
 	display: flex;
 	flex-direction: column;
@@ -17,10 +26,11 @@ div#buttons {
 	flex-basis: 3vmin;
 	position: relative;
 
-	background: #333;
+	background: #3333333f;
 	width: 50vmin;
 	height: 80vmin;
 	border: 7px #222;
+	border-radius: 10%;
 
 	position: absolute;
 	top: 50%;

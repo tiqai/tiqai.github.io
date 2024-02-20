@@ -12,6 +12,10 @@ function startLinkingDots() {
 	window.open('./Games/LinkDots/index.html', '_self')
 }
 
+function startSudoku() {
+	window.open('./Games/Sudoku/index.html', '_self')
+}
+
 async function voteBan() {
 	if (isLocked) return
 
