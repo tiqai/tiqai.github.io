@@ -177,6 +177,17 @@ h2 {
     margin-bottom: 10px;
 }
 
+.dish-category-badge {
+    display: inline-block;
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+    margin-right: 5px;
+}
+
 .nutrition-info {
     display: flex;
     justify-content: space-between;
@@ -418,32 +429,11 @@ textarea {
     margin-bottom: 20px;
 }
 
-.week-title-container {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 1.2rem;
+.week-title {
+    font-size: 1.5rem;
     font-weight: 600;
     color: var(--dark-color);
-}
-
-.date-input {
-    padding: 5px 10px;
-    border: 1px solid #ddd;
-    border-radius: var(--border-radius);
-    text-align: center;
-    font-size: 1rem;
-    transition: var(--transition);
-}
-
-.date-input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-}
-
-.date-input.number {
-    width: 60px;
+    margin: 0;
 }
 
 /* Стили для категорий */
@@ -525,6 +515,39 @@ textarea {
 .category-stats {
     font-size: 0.9rem;
     color: #666;
+}
+
+/* Стили для выбора категорий */
+.categories-select {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.category-checkbox {
+    display: none;
+}
+
+.category-checkbox-label {
+    display: inline-block;
+    padding: 8px 15px;
+    background-color: var(--light-color);
+    border: 2px solid transparent;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    user-select: none;
+}
+
+.category-checkbox-label:hover {
+    background-color: #e8f5e8;
+}
+
+.category-checkbox:checked + .category-checkbox-label {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--secondary-color);
 }
 
 /* Стили для списка покупок */
@@ -740,13 +763,20 @@ textarea {
     .week-navigation {
         flex-direction: column;
         gap: 15px;
-    }
-    
-    .week-title-container {
-        order: -1;
+        align-items: flex-start;
     }
     
     .category-input-group {
         flex-direction: column;
+    }
+    
+    .categories-select {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .category-checkbox-label {
+        width: 100%;
+        text-align: center;
     }
 }
