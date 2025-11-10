@@ -1187,60 +1187,77 @@
             }
         }
 
-        // Загрузка данных из Gist
-        async function loadFromGist() {
-            if (!syncConfig.token || !syncConfig.gistId || isSyncing) return;
+       // Загрузка данных из Gist с принудительным обновлением
+async function loadFromGist() {
+    if (!syncConfig.token || !syncConfig.gistId || isSyncing) return;
 
-            isSyncing = true;
-            updateSyncStatus('pending', 'Загрузка данных...');
+    isSyncing = true;
+    updateSyncStatus('pending', 'Загрузка данных...');
 
-            try {
-                const response = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
-                    headers: {
-                        'Authorization': `token ${syncConfig.token}`
-                    }
-                });
-
-                if (response.ok) {
-                    const gist = await response.json();
-                    const file = gist.files['meal-planner-data.json'];
-                    
-                    if (file && file.content) {
-                        const data = JSON.parse(file.content);
-                        
-                        // Обновляем локальные данные
-                        dishes = data.dishes || dishes;
-                        weekPlan = data.weekPlan || weekPlan;
-                        shoppingList = data.shoppingList || shoppingList;
-                        
-                        // Сохраняем в localStorage
-                        localStorage.setItem('dishes', JSON.stringify(dishes));
-                        localStorage.setItem('weekPlan', JSON.stringify(weekPlan));
-                        localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
-                        
-                        // Обновляем время синхронизации
-                        syncConfig.lastSync = new Date().toISOString();
-                        localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
-                        
-                        // Обновляем интерфейс
-                        renderWeekPlanner();
-                        renderDishList();
-                        renderShoppingList();
-                        updateStatistics();
-                        
-                        updateSyncStatus('synced', 'Данные загружены');
-                    }
-                } else {
-                    throw new Error('Ошибка загрузки: ' + response.status);
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки:', error);
-                updateSyncStatus('error', 'Ошибка загрузки: ' + error.message);
-            } finally {
-                isSyncing = false;
-                updateSyncUI();
+    try {
+        const response = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
+            headers: {
+                'Authorization': `token ${syncConfig.token}`
             }
+        });
+
+        if (response.ok) {
+            const gist = await response.json();
+            const file = gist.files['meal-planner-data.json'];
+            
+            if (file && file.content) {
+                const serverData = JSON.parse(file.content);
+                
+                // ВАЖНО: Всегда используем данные с сервера, перезаписывая локальные
+                dishes = serverData.dishes || [];
+                weekPlan = serverData.weekPlan || {};
+                shoppingList = serverData.shoppingList || {};
+                
+                // Принудительно сохраняем в localStorage (перезаписываем)
+                localStorage.setItem('dishes', JSON.stringify(dishes));
+                localStorage.setItem('weekPlan', JSON.stringify(weekPlan));
+                localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
+                
+                // Обновляем время синхронизации
+                syncConfig.lastSync = new Date().toISOString();
+                localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
+                
+                // Обновляем интерфейс
+                renderWeekPlanner();
+                renderDishList();
+                renderShoppingList();
+                updateStatistics();
+                
+                updateSyncStatus('synced', 'Данные загружены с сервера');
+                console.log('Данные успешно загружены с сервера');
+            }
+        } else {
+            throw new Error('Ошибка загрузки: ' + response.status);
         }
+    } catch (error) {
+        console.error('Ошибка загрузки:', error);
+        updateSyncStatus('error', 'Ошибка загрузки: ' + error.message);
+    } finally {
+        isSyncing = false;
+        updateSyncUI();
+    }
+}
+
+        // Принудительная синхронизация - сначала загружаем, потом сохраняем
+async function forceSync() {
+    if (!syncConfig.token) {
+        alert('Сначала настройте синхронизацию');
+        return;
+    }
+
+    // Сначала загружаем актуальные данные с сервера
+    await loadFromGist();
+    
+    // Затем сохраняем обратно (на случай если были локальные изменения)
+    await saveToGist();
+    
+    updateSyncStatus('synced', 'Полная синхронизация завершена');
+}
 
         // Обновление статуса синхронизации
         function updateSyncStatus(status, message) {
@@ -1377,13 +1394,14 @@
                 }
             });
             
-            document.getElementById('manual-sync').addEventListener('click', function() {
-                if (syncConfig.token) {
-                    saveToGist();
-                } else {
-                    alert('Сначала настройте синхронизацию');
-                }
-            });
+            // В функции setupEventListeners замените этот обработчик:
+document.getElementById('manual-sync').addEventListener('click', function() {
+    if (syncConfig.token) {
+        forceSync(); // Вместо saveToGist()
+    } else {
+        alert('Сначала настройте синхронизацию');
+    }
+});
             
             document.getElementById('export-data').addEventListener('click', exportData);
             
