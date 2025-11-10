@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Планировщик питания</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --accent-color: #8BC34A;
+            --light-color: #F1F8E9;
+            --dark-color: #1B5E20;
+            --text-color: #333;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        nav ul {
+            display: flex;
+            justify-content: center;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+
+        nav li {
+            margin: 5px 15px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        nav a:hover, nav a.active {
+            background-color: var(--secondary-color);
+        }
+
+        .section {
+            display: none;
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-top: 25px;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: var(--dark-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .week-planner {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .day-card {
+            background-color: var(--light-color);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .day-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .day-card h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+
+        .meal-slot {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .meal-slot:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .meal-slot.empty {
+            background-color: #e0e0e0;
+            color: #9e9e9e;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .dish-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+        }
+
+        .dish-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .dish-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            cursor: pointer;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .dish-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .dish-card h3 {
+            color: var(--dark-color);
+            margin-bottom: 10px;
+        }
+
+        .nutrition-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .nutrition-value {
+            font-weight: bold;
+            color: var(--dark-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .ingredient-list, .step-list {
+            margin-top: 10px;
+        }
+
+        .ingredient-item, .step-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: var(--light-color);
+            border-radius: var(--border-radius);
+            gap: 10px;
+        }
+
+        .ingredient-name {
+            flex: 2;
+        }
+
+        .ingredient-amount {
+            flex: 1;
+        }
+
+        .ingredient-unit {
+            flex: 1;
+        }
+
+        .step-item input {
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #757575;
+        }
+
+        .btn-secondary:hover {
+            background-color: #616161;
+        }
+
+        .btn-danger {
+            background-color: #f44336;
+        }
+
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.9rem;
+        }
+
+        .btn-icon {
+            margin-right: 5px;
+        }
+
+        .image-upload {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .image-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: var(--border-radius);
+            object-fit: cover;
+            border: 2px dashed #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #757575;
+            transition: var(--transition);
+        }
+
+        .close-modal:hover {
+            color: var(--dark-color);
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .week-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .week-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .shopping-list {
+            margin-top: 20px;
+        }
+
+        .shopping-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            transition: var(--transition);
+        }
+
+        .shopping-item:hover {
+            background-color: var(--light-color);
+        }
+
+        .shopping-item:last-child {
+            border-bottom: none;
+        }
+
+        .shopping-item input[type="checkbox"] {
+            margin-left: 15px;
+            transform: scale(1.2);
+        }
+
+        .shopping-item.checked {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .shopping-item-info {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .shopping-item-name {
+            font-weight: 500;
+        }
+
+        .shopping-item-details {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .recipe-content {
+            margin-top: 20px;
+        }
+
+        .recipe-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
+
+        .recipe-section {
+            margin-bottom: 25px;
+        }
+
+        .recipe-section h4 {
+            color: var(--dark-color);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .recipe-ingredients, .recipe-steps {
+            padding-left: 20px;
+        }
+
+        .recipe-ingredients li, .recipe-steps li {
+            margin-bottom: 8px;
+        }
+
+        .recipe-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .confirmation-modal .modal-content {
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .confirmation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .auth-section {
+            max-width: 400px;
+            margin: 50px auto;
+        }
+
+        .auth-form {
+            margin-top: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .week-planner {
+                grid-template-columns: 1fr;
+            }
+            
+            .dish-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .ingredient-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .ingredient-item > * {
+                margin-bottom: 10px;
+            }
+            
+            .shopping-item-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .recipe-actions {
+                flex-direction: column;
+            }
+            
+            .user-info {
+                justify-content: center;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Планировщик питания</h1>
+            <div class="user-info" id="user-info" style="display: none;">
+                <span id="user-email"></span>
+                <button class="btn btn-small" id="logout-btn">Выйти</button>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="nav-link active" data-section="week-plan">План на неделю</a></li>
+                    <li><a href="#" class="nav-link" data-section="dishes">Мои блюда</a></li>
+                    <li><a href="#" class="nav-link" data-section="add-dish">Добавить блюдо</a></li>
+                    <li><a href="#" class="nav-link" data-section="shopping-list">Список покупок</a></li>
+                    <li><a href="#" class="nav-link" data-section="statistics">Статистика</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Авторизация -->
+        <section id="auth" class="section active">
+            <div class="auth-section">
+                <h2>Вход в систему</h2>
+                <p>Для использования планировщика питания необходимо войти в систему.</p>
+                <form class="auth-form" id="login-form">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Пароль</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <button type="submit" class="btn" id="login-btn">Войти</button>
+                    <p style="margin-top: 15px; text-align: center;">
+                        Нет аккаунта? <a href="#" id="show-register">Зарегистрироваться</a>
+                    </p>
+                </form>
+                
+                <form class="auth-form" id="register-form" style="display: none;">
+                    <div class="form-group">
+                        <label for="reg-email">Email</label>
+                        <input type="email" id="reg-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Пароль</label>
+                        <input type="password" id="reg-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">Подтвердите пароль</label>
+                        <input type="password" id="confirm-password" required>
+                    </div>
+                    <button type="submit" class="btn" id="register-btn">Зарегистрироваться</button>
+                    <p style="margin-top: 15px; text-align: center;">
+                        Уже есть аккаунт? <a href="#" id="show-login">Войти</a>
+                    </p>
+                </form>
+            </div>
+        </section>
+
+        <!-- План на неделю -->
+        <section id="week-plan" class="section">
+            <div class="week-navigation">
+                <button class="btn btn-secondary" id="prev-week">← Предыдущая неделя</button>
+                <div class="week-title" id="week-title">Неделя 1, 2023</div>
+                <button class="btn btn-secondary" id="next-week">Следующая неделя →</button>
+            </div>
+            
+            <div class="week-planner" id="week-planner">
+                <!-- Динамически заполняется через JavaScript -->
+            </div>
+            
+            <div class="nutrition-summary">
+                <h3>Питание за неделю</h3>
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-label">Калории</div>
+                        <div class="stat-value" id="weekly-calories">0</div>
+                        <div class="stat-label">ккал</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Белки</div>
+                        <div class="stat-value" id="weekly-protein">0</div>
+                        <div class="stat-label">г</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Жиры</div>
+                        <div class="stat-value" id="weekly-fat">0</div>
+                        <div class="stat-label">г</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Углеводы</div>
+                        <div class="stat-value" id="weekly-carbs">0</div>
+                        <div class="stat-label">г</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Мои блюда -->
+        <section id="dishes" class="section">
+            <h2>Мои блюда</h2>
+            <div class="dish-list" id="dish-list">
+                <!-- Динамически заполняется через JavaScript -->
+            </div>
+        </section>
+
+        <!-- Добавить блюдо -->
+        <section id="add-dish" class="section">
+            <h2 id="dish-form-title">Добавить новое блюдо</h2>
+            <form id="dish-form">
+                <input type="hidden" id="edit-dish-index" value="-1">
+                
+                <div class="form-group">
+                    <label for="dish-name">Название блюда</label>
+                    <input type="text" id="dish-name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dish-description">Описание блюда</label>
+                    <textarea id="dish-description"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dish-image">Фотография блюда</label>
+                    <div class="image-upload">
+                        <input type="file" id="dish-image" accept="image/*">
+                        <div class="image-preview" id="image-preview">Превью изображения</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Пищевая ценность (на 100г)</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label for="dish-calories">Калории (ккал)</label>
+                            <input type="number" id="dish-calories" min="0" required>
+                        </div>
+                        <div>
+                            <label for="dish-protein">Белки (г)</label>
+                            <input type="number" id="dish-protein" min="0" step="0.1" required>
+                        </div>
+                        <div>
+                            <label for="dish-fat">Жиры (г)</label>
+                            <input type="number" id="dish-fat" min="0" step="0.1" required>
+                        </div>
+                        <div>
+                            <label for="dish-carbs">Углеводы (г)</label>
+                            <input type="number" id="dish-carbs" min="0" step="0.1" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Ингредиенты</label>
+                    <div class="ingredient-list" id="ingredient-list">
+                        <div class="ingredient-item">
+                            <input type="text" placeholder="Название ингредиента" class="ingredient-name">
+                            <input type="text" placeholder="Количество" class="ingredient-amount">
+                            <select class="ingredient-unit">
+                                <option value="г">г</option>
+                                <option value="кг">кг</option>
+                                <option value="мл">мл</option>
+                                <option value="л">л</option>
+                                <option value="шт">шт</option>
+                                <option value="ч.л.">ч.л.</option>
+                                <option value="ст.л.">ст.л.</option>
+                                <option value="щепотка">щепотка</option>
+                                <option value="по вкусу">по вкусу</option>
+                            </select>
+                            <button type="button" class="btn btn-danger btn-small remove-ingredient">×</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="add-ingredient">+ Добавить ингредиент</button>
+                </div>
+                
+                <div class="form-group">
+                    <label>Шаги приготовления</label>
+                    <div class="step-list" id="step-list">
+                        <div class="step-item">
+                            <input type="text" placeholder="Описание шага" class="step-description">
+                            <button type="button" class="btn btn-danger btn-small remove-step">×</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="add-step">+ Добавить шаг</button>
+                </div>
+                
+                <button type="submit" class="btn" id="save-dish-btn">Сохранить блюдо</button>
+                <button type="button" class="btn btn-secondary" id="cancel-edit" style="display: none; margin-left: 10px;">Отмена</button>
+            </form>
+        </section>
+
+        <!-- Список покупок -->
+        <section id="shopping-list" class="section">
+            <h2>Список покупок на неделю</h2>
+            <p>Все необходимые ингредиенты для выбранных блюд на текущую неделю:</p>
+            <div class="shopping-list" id="shopping-list-container">
+                <!-- Динамически заполняется через JavaScript -->
+            </div>
+        </section>
+
+        <!-- Статистика -->
+        <section id="statistics" class="section">
+            <h2>Статистика питания</h2>
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-label">Средние калории в день</div>
+                    <div class="stat-value" id="avg-calories">0</div>
+                    <div class="stat-label">ккал</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Самый калорийный день</div>
+                    <div class="stat-value" id="max-calories-day">Понедельник</div>
+                    <div class="stat-label" id="max-calories-value">0 ккал</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Любимое блюдо</div>
+                    <div class="stat-value" id="favorite-dish">-</div>
+                    <div class="stat-label">по частоте</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Всего блюд в базе</div>
+                    <div class="stat-value" id="total-dishes">0</div>
+                    <div class="stat-label">блюд</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <h3>Распределение БЖУ за неделю</h3>
+                <div id="nutrition-chart" style="height: 300px; margin-top: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; background-color: var(--light-color); border-radius: var(--border-radius);">
+                        <p>Диаграмма распределения белков, жиров и углеводов</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Модальное окно для выбора блюда -->
+    <div class="modal" id="dish-select-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Выберите блюдо</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="dish-list" id="modal-dish-list">
+                <!-- Динамически заполняется через JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для просмотра рецепта -->
+    <div class="modal" id="recipe-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="recipe-dish-name">Название блюда</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="recipe-content" id="recipe-content">
+                <!-- Динамически заполняется через JavaScript -->
+            </div>
+            <div class="recipe-actions" id="recipe-actions">
+                <!-- Кнопки редактирования и удаления -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <div class="modal confirmation-modal" id="confirmation-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Подтверждение удаления</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <p id="confirmation-message">Вы уверены, что хотите удалить этот рецепт?</p>
+            <div class="confirmation-buttons">
+                <button class="btn btn-danger" id="confirm-delete">Удалить</button>
+                <button class="btn btn-secondary" id="cancel-delete">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация API
+        const API_BASE_URL = 'https://your-api-domain.com/api'; // Замените на ваш реальный URL API
+        
+        // Данные приложения
+        let dishes = [];
+        let weekPlan = {};
+        let shoppingList = {};
+        let currentWeek = 1;
+        let currentMealSlot = null;
+        let dishToDelete = null;
+        let authToken = localStorage.getItem('authToken');
+        let currentUser = null;
+
+        // Единицы измерения для ингредиентов
+        const measurementUnits = [
+            "г", "кг", "мл", "л", "шт", "ч.л.", "ст.л.", "щепотка", "по вкусу"
+        ];
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeNavigation();
+            setupEventListeners();
+            
+            // Проверяем авторизацию
+            if (authToken) {
+                checkAuth();
+            } else {
+                showAuthSection();
+            }
+        });
+
+        // Проверка авторизации
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    currentUser = userData;
+                    showApp();
+                    loadUserData();
+                } else {
+                    localStorage.removeItem('authToken');
+                    showAuthSection();
+                }
+            } catch (error) {
+                console.error('Ошибка проверки авторизации:', error);
+                showAuthSection();
+            }
+        }
+
+        // Показать раздел авторизации
+        function showAuthSection() {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('auth').classList.add('active');
+            document.getElementById('user-info').style.display = 'none';
+        }
+
+        // Показать основное приложение
+        function showApp() {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('week-plan').classList.add('active');
+            document.getElementById('user-info').style.display = 'flex';
+            document.getElementById('user-email').textContent = currentUser.email;
+            
+            // Активируем правильную навигацию
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            document.querySelector('[data-section="week-plan"]').classList.add('active');
+        }
+
+        // Загрузка данных пользователя
+        async function loadUserData() {
+            try {
+                await Promise.all([
+                    loadDishes(),
+                    loadWeekPlan(),
+                    loadShoppingList()
+                ]);
+                
+                renderWeekPlanner();
+                renderDishList();
+                renderShoppingList();
+                updateStatistics();
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+                alert('Ошибка загрузки данных. Попробуйте обновить страницу.');
+            }
+        }
+
+        // Загрузка блюд с сервера
+        async function loadDishes() {
+            const response = await fetch(`${API_BASE_URL}/dishes`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                dishes = await response.json();
+            } else {
+                throw new Error('Ошибка загрузки блюд');
+            }
+        }
+
+        // Загрузка плана на неделю с сервера
+        async function loadWeekPlan() {
+            const response = await fetch(`${API_BASE_URL}/week-plan`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                weekPlan = await response.json();
+            } else {
+                throw new Error('Ошибка загрузки плана на неделю');
+            }
+        }
+
+        // Загрузка списка покупок с сервера
+        async function loadShoppingList() {
+            const response = await fetch(`${API_BASE_URL}/shopping-list`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                shoppingList = await response.json();
+            } else {
+                throw new Error('Ошибка загрузки списка покупок');
+            }
+        }
+
+        // Сохранение блюд на сервер
+        async function saveDishes() {
+            const response = await fetch(`${API_BASE_URL}/dishes`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify(dishes)
+            });
+            
+            if (!response.ok) {
+                throw new Error('Ошибка сохранения блюд');
+            }
+        }
+
+        // Сохранение плана на неделю на сервер
+        async function saveWeekPlan() {
+            const response = await fetch(`${API_BASE_URL}/week-plan`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify(weekPlan)
+            });
+            
+            if (!response.ok) {
+                throw new Error('Ошибка сохранения плана на неделю');
+            }
+        }
+
+        // Сохранение списка покупок на сервер
+        async function saveShoppingList() {
+            const response = await fetch(`${API_BASE_URL}/shopping-list`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify(shoppingList)
+            });
+            
+            if (!response.ok) {
+                throw new Error('Ошибка сохранения списка покупок');
+            }
+        }
+
+        // Инициализация навигации
+        function initializeNavigation() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Если пользователь не авторизован, показываем форму входа
+                    if (!authToken) {
+                        showAuthSection();
+                        return;
+                    }
+                    
+                    const targetSection = this.getAttribute('data-section');
+                    
+                    // Убираем активный класс у всех ссылок и секций
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                    
+                    // Добавляем активный класс к текущей ссылке и секции
+                    this.classList.add('active');
+                    document.getElementById(targetSection).classList.add('active');
+                    
+                    // При переходе на список покупок обновляем его
+                    if (targetSection === 'shopping-list') {
+                        renderShoppingList();
+                    }
+                    
+                    // При переходе на добавление блюда сбрасываем форму
+                    if (targetSection === 'add-dish') {
+                        resetDishForm();
+                    }
+                });
+            });
+        }
+
+        // Рендеринг планировщика на неделю
+        function renderWeekPlanner() {
+            const weekPlanner = document.getElementById('week-planner');
+            weekPlanner.innerHTML = '';
+            
+            const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+            const meals = ['Завтрак', 'Обед', 'Ужин'];
+            
+            days.forEach(day => {
+                const dayCard = document.createElement('div');
+                dayCard.className = 'day-card';
+                
+                const dayTitle = document.createElement('h3');
+                dayTitle.textContent = day;
+                dayCard.appendChild(dayTitle);
+                
+                meals.forEach(meal => {
+                    const mealSlot = document.createElement('div');
+                    mealSlot.className = 'meal-slot';
+                    mealSlot.setAttribute('data-day', day);
+                    mealSlot.setAttribute('data-meal', meal);
+                    
+                    const mealKey = `${currentWeek}-${day}-${meal}`;
+                    const dish = weekPlan[mealKey];
+                    
+                    if (dish) {
+                        let imageHtml = '';
+                        if (dish.image) {
+                            imageHtml = `<img src="${dish.image}" alt="${dish.name}" class="dish-image">`;
+                        }
+                        
+                        mealSlot.innerHTML = `
+                            ${imageHtml}
+                            <strong>${meal}</strong>
+                            <div>${dish.name}</div>
+                            <div class="nutrition-info">
+                                <span>${dish.calories} ккал</span>
+                            </div>
+                            <button class="btn btn-small view-recipe-btn" style="margin-top: 5px; width: 100%;">Рецепт</button>
+                        `;
+                        
+                        // Добавляем обработчик для кнопки просмотра рецепта
+                        mealSlot.querySelector('.view-recipe-btn').addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const dishIndex = dishes.findIndex(d => d.name === dish.name);
+                            if (dishIndex !== -1) {
+                                openRecipeModal(dishIndex);
+                            }
+                        });
+                    } else {
+                        mealSlot.className += ' empty';
+                        mealSlot.innerHTML = `${meal} - Добавить блюдо`;
+                    }
+                    
+                    mealSlot.addEventListener('click', function() {
+                        currentMealSlot = {
+                            week: currentWeek,
+                            day: day,
+                            meal: meal
+                        };
+                        openDishSelectModal();
+                    });
+                    
+                    dayCard.appendChild(mealSlot);
+                });
+                
+                weekPlanner.appendChild(dayCard);
+            });
+            
+            updateWeekSummary();
+            updateShoppingList();
+        }
+
+        // Рендеринг списка блюд
+        function renderDishList() {
+            const dishList = document.getElementById('dish-list');
+            dishList.innerHTML = '';
+            
+            if (dishes.length === 0) {
+                dishList.innerHTML = '<p>У вас пока нет сохраненных блюд. Добавьте первое блюдо!</p>';
+                return;
+            }
+            
+            dishes.forEach((dish, index) => {
+                const dishCard = document.createElement('div');
+                dishCard.className = 'dish-card';
+                
+                let imageHtml = '';
+                if (dish.image) {
+                    imageHtml = `<img src="${dish.image}" alt="${dish.name}" class="dish-image">`;
+                }
+                
+                dishCard.innerHTML = `
+                    ${imageHtml}
+                    <h3>${dish.name}</h3>
+                    <p>${dish.description || 'Описание отсутствует'}</p>
+                    <div class="nutrition-info">
+                        <div><span class="nutrition-value">${dish.calories}</span> ккал</div>
+                        <div>Б: <span class="nutrition-value">${dish.protein}</span> г</div>
+                        <div>Ж: <span class="nutrition-value">${dish.fat}</span> г</div>
+                        <div>У: <span class="nutrition-value">${dish.carbs}</span> г</div>
+                    </div>
+                    <button class="btn btn-small view-recipe-btn" style="margin-top: 10px; width: 100%;">Посмотреть рецепт</button>
+                `;
+                
+                dishCard.addEventListener('click', function(e) {
+                    if (!e.target.classList.contains('view-recipe-btn')) {
+                        openRecipeModal(index);
+                    }
+                });
+                
+                dishCard.querySelector('.view-recipe-btn').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openRecipeModal(index);
+                });
+                
+                dishList.appendChild(dishCard);
+            });
+        }
+
+        // Рендеринг списка покупок
+        function renderShoppingList() {
+            const shoppingListContainer = document.getElementById('shopping-list-container');
+            shoppingListContainer.innerHTML = '';
+            
+            const currentWeekKey = `week-${currentWeek}`;
+            const weekShoppingList = shoppingList[currentWeekKey] || [];
+            
+            if (weekShoppingList.length === 0) {
+                shoppingListContainer.innerHTML = '<p>Список покупок пуст. Добавьте блюда в план на неделю.</p>';
+                return;
+            }
+            
+            weekShoppingList.forEach((item, index) => {
+                const shoppingItem = document.createElement('div');
+                shoppingItem.className = `shopping-item ${item.checked ? 'checked' : ''}`;
+                shoppingItem.innerHTML = `
+                    <div class="shopping-item-info">
+                        <div class="shopping-item-name">${item.name}</div>
+                        <div class="shopping-item-details">${item.amount} ${item.unit}</div>
+                    </div>
+                    <input type="checkbox" ${item.checked ? 'checked' : ''}>
+                `;
+                
+                // Обработчик для отметки покупки
+                shoppingItem.querySelector('input[type="checkbox"]').addEventListener('change', function() {
+                    weekShoppingList[index].checked = this.checked;
+                    shoppingList[currentWeekKey] = weekShoppingList;
+                    saveShoppingList().catch(error => {
+                        console.error('Ошибка сохранения списка покупок:', error);
+                        alert('Ошибка сохранения. Попробуйте еще раз.');
+                    });
+                    renderShoppingList();
+                });
+                
+                shoppingListContainer.appendChild(shoppingItem);
+            });
+        }
+
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            // Навигация по неделям
+            document.getElementById('prev-week').addEventListener('click', function() {
+                if (currentWeek > 1) {
+                    currentWeek--;
+                    updateWeekTitle();
+                    renderWeekPlanner();
+                }
+            });
+            
+            document.getElementById('next-week').addEventListener('click', function() {
+                currentWeek++;
+                updateWeekTitle();
+                renderWeekPlanner();
+            });
+            
+            // Форма добавления блюда
+            document.getElementById('dish-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveDish();
+            });
+            
+            // Кнопка отмены редактирования
+            document.getElementById('cancel-edit').addEventListener('click', function() {
+                resetDishForm();
+            });
+            
+            // Превью изображения
+            document.getElementById('dish-image').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('image-preview').innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Добавление ингредиентов
+            document.getElementById('add-ingredient').addEventListener('click', function() {
+                addIngredientField();
+            });
+            
+            // Добавление шагов приготовления
+            document.getElementById('add-step').addEventListener('click', function() {
+                addStepField();
+            });
+            
+            // Закрытие модальных окон
+            document.querySelectorAll('.close-modal').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        modal.classList.remove('active');
+                    });
+                });
+            });
+            
+            // Закрытие модальных окон при клике вне их
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.classList.remove('active');
+                    }
+                });
+            });
+            
+            // Подтверждение удаления
+            document.getElementById('confirm-delete').addEventListener('click', function() {
+                if (dishToDelete !== null) {
+                    deleteDish(dishToDelete);
+                    document.getElementById('confirmation-modal').classList.remove('active');
+                    dishToDelete = null;
+                }
+            });
+            
+            // Отмена удаления
+            document.getElementById('cancel-delete').addEventListener('click', function() {
+                document.getElementById('confirmation-modal').classList.remove('active');
+                dishToDelete = null;
+            });
+            
+            // Форма входа
+            document.getElementById('login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                login();
+            });
+            
+            // Форма регистрации
+            document.getElementById('register-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                register();
+            });
+            
+            // Переключение между формами входа и регистрации
+            document.getElementById('show-register').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('register-form').style.display = 'block';
+            });
+            
+            document.getElementById('show-login').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('register-form').style.display = 'none';
+                document.getElementById('login-form').style.display = 'block';
+            });
+            
+            // Выход из системы
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                logout();
+            });
+        }
+
+        // Авторизация
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('login-btn');
+            
+            // Показываем индикатор загрузки
+            loginBtn.innerHTML = '<div class="loading"></div>';
+            loginBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    currentUser = data.user;
+                    
+                    showApp();
+                    loadUserData();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Ошибка входа');
+                }
+            } catch (error) {
+                console.error('Ошибка входа:', error);
+                alert('Ошибка соединения с сервером');
+            } finally {
+                // Восстанавливаем кнопку
+                loginBtn.innerHTML = 'Войти';
+                loginBtn.disabled = false;
+            }
+        }
+
+        // Регистрация
+        async function register() {
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const registerBtn = document.getElementById('register-btn');
+            
+            if (password !== confirmPassword) {
+                alert('Пароли не совпадают');
+                return;
+            }
+            
+            // Показываем индикатор загрузки
+            registerBtn.innerHTML = '<div class="loading"></div>';
+            registerBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    currentUser = data.user;
+                    
+                    showApp();
+                    loadUserData();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Ошибка регистрации');
+                }
+            } catch (error) {
+                console.error('Ошибка регистрации:', error);
+                alert('Ошибка соединения с сервером');
+            } finally {
+                // Восстанавливаем кнопку
+                registerBtn.innerHTML = 'Зарегистрироваться';
+                registerBtn.disabled = false;
+            }
+        }
+
+        // Выход из системы
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            dishes = [];
+            weekPlan = {};
+            shoppingList = {};
+            showAuthSection();
+        }
+
+        // Обновление заголовка недели
+        function updateWeekTitle() {
+            document.getElementById('week-title').textContent = `Неделя ${currentWeek}, 2023`;
+        }
+
+        // Открытие модального окна выбора блюда
+        function openDishSelectModal() {
+            const modal = document.getElementById('dish-select-modal');
+            const dishList = document.getElementById('modal-dish-list');
+            
+            dishList.innerHTML = '';
+            
+            if (dishes.length === 0) {
+                dishList.innerHTML = '<p>У вас пока нет сохраненных блюд. Добавьте первое блюдо!</p>';
+            } else {
+                dishes.forEach((dish, index) => {
+                    const dishCard = document.createElement('div');
+                    dishCard.className = 'dish-card';
+                    
+                    let imageHtml = '';
+                    if (dish.image) {
+                        imageHtml = `<img src="${dish.image}" alt="${dish.name}" class="dish-image">`;
+                    }
+                    
+                    dishCard.innerHTML = `
+                        ${imageHtml}
+                        <h3>${dish.name}</h3>
+                        <p>${dish.description || 'Описание отсутствует'}</p>
+                        <div class="nutrition-info">
+                            <div><span class="nutrition-value">${dish.calories}</span> ккал</div>
+                            <div>Б: <span class="nutrition-value">${dish.protein}</span> г</div>
+                            <div>Ж: <span class="nutrition-value">${dish.fat}</span> г</div>
+                            <div>У: <span class="nutrition-value">${dish.carbs}</span> г</div>
+                        </div>
+                    `;
+                    
+                    dishCard.addEventListener('click', function() {
+                        assignDishToSlot(index);
+                        modal.classList.remove('active');
+                    });
+                    
+                    dishList.appendChild(dishCard);
+                });
+            }
+            
+            modal.classList.add('active');
+        }
+
+        // Назначение блюда на слот
+        async function assignDishToSlot(dishIndex) {
+            if (!currentMealSlot) return;
+            
+            const mealKey = `${currentMealSlot.week}-${currentMealSlot.day}-${currentMealSlot.meal}`;
+            weekPlan[mealKey] = dishes[dishIndex];
+            
+            try {
+                await saveWeekPlan();
+                renderWeekPlanner();
+            } catch (error) {
+                console.error('Ошибка сохранения плана на неделю:', error);
+                alert('Ошибка сохранения. Попробуйте еще раз.');
+            }
+        }
+
+        // Открытие модального окна рецепта
+        function openRecipeModal(dishIndex) {
+            const modal = document.getElementById('recipe-modal');
+            const dish = dishes[dishIndex];
+            
+            document.getElementById('recipe-dish-name').textContent = dish.name;
+            
+            let imageHtml = '';
+            if (dish.image) {
+                imageHtml = `<img src="${dish.image}" alt="${dish.name}" class="recipe-image">`;
+            }
+            
+            let ingredientsHtml = '';
+            if (dish.ingredients && dish.ingredients.length > 0) {
+                ingredientsHtml = '<div class="recipe-section"><h4>Ингредиенты:</h4><ul class="recipe-ingredients">';
+                dish.ingredients.forEach(ingredient => {
+                    ingredientsHtml += `<li>${ingredient.name} - ${ingredient.amount} ${ingredient.unit}</li>`;
+                });
+                ingredientsHtml += '</ul></div>';
+            }
+            
+            let stepsHtml = '';
+            if (dish.steps && dish.steps.length > 0) {
+                stepsHtml = '<div class="recipe-section"><h4>Шаги приготовления:</h4><ol class="recipe-steps">';
+                dish.steps.forEach(step => {
+                    stepsHtml += `<li>${step}</li>`;
+                });
+                stepsHtml += '</ol></div>';
+            }
+            
+            document.getElementById('recipe-content').innerHTML = `
+                ${imageHtml}
+                <div class="recipe-section">
+                    <p><strong>Описание:</strong> ${dish.description || 'Отсутствует'}</p>
+                </div>
+                <div class="recipe-section">
+                    <h4>Пищевая ценность (на 100г):</h4>
+                    <div class="nutrition-info" style="margin: 15px 0;">
+                        <div><strong>Калории:</strong> ${dish.calories} ккал</div>
+                        <div><strong>Белки:</strong> ${dish.protein} г</div>
+                        <div><strong>Жиры:</strong> ${dish.fat} г</div>
+                        <div><strong>Углеводы:</strong> ${dish.carbs} г</div>
+                    </div>
+                </div>
+                ${ingredientsHtml}
+                ${stepsHtml}
+            `;
+            
+            // Добавляем кнопки редактирования и удаления
+            document.getElementById('recipe-actions').innerHTML = `
+                <button class="btn" id="edit-recipe-btn" data-index="${dishIndex}">Редактировать рецепт</button>
+                <button class="btn btn-danger" id="delete-recipe-btn" data-index="${dishIndex}">Удалить рецепт</button>
+            `;
+            
+            // Обработчики для кнопок
+            document.getElementById('edit-recipe-btn').addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                editDish(index);
+                modal.classList.remove('active');
+            });
+            
+            document.getElementById('delete-recipe-btn').addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                showDeleteConfirmation(index);
+            });
+            
+            modal.classList.add('active');
+        }
+
+        // Показать подтверждение удаления
+        function showDeleteConfirmation(index) {
+            const dish = dishes[index];
+            document.getElementById('confirmation-message').textContent = 
+                `Вы уверены, что хотите удалить рецепт "${dish.name}"?`;
+            dishToDelete = index;
+            document.getElementById('confirmation-modal').classList.add('active');
+        }
+
+        // Редактирование блюда
+        function editDish(index) {
+            const dish = dishes[index];
+            
+            // Заполняем форму данными блюда
+            document.getElementById('dish-form-title').textContent = 'Редактировать блюдо';
+            document.getElementById('edit-dish-index').value = index;
+            document.getElementById('dish-name').value = dish.name;
+            document.getElementById('dish-description').value = dish.description || '';
+            document.getElementById('dish-calories').value = dish.calories;
+            document.getElementById('dish-protein').value = dish.protein;
+            document.getElementById('dish-fat').value = dish.fat;
+            document.getElementById('dish-carbs').value = dish.carbs;
+            
+            // Превью изображения
+            if (dish.image) {
+                document.getElementById('image-preview').innerHTML = `<img src="${dish.image}" alt="Preview">`;
+            } else {
+                document.getElementById('image-preview').innerHTML = 'Превью изображения';
+            }
+            
+            // Заполняем ингредиенты
+            document.getElementById('ingredient-list').innerHTML = '';
+            if (dish.ingredients && dish.ingredients.length > 0) {
+                dish.ingredients.forEach(ingredient => {
+                    addIngredientField(ingredient.name, ingredient.amount, ingredient.unit);
+                });
+            } else {
+                addIngredientField();
+            }
+            
+            // Заполняем шаги приготовления
+            document.getElementById('step-list').innerHTML = '';
+            if (dish.steps && dish.steps.length > 0) {
+                dish.steps.forEach(step => {
+                    addStepField(step);
+                });
+            } else {
+                addStepField();
+            }
+            
+            // Показываем кнопку отмены
+            document.getElementById('cancel-edit').style.display = 'inline-block';
+            document.getElementById('save-dish-btn').textContent = 'Обновить блюдо';
+            
+            // Переходим на вкладку добавления блюда
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+            document.querySelector('[data-section="add-dish"]').classList.add('active');
+            document.getElementById('add-dish').classList.add('active');
+        }
+
+        // Удаление блюда
+        async function deleteDish(index) {
+            // Удаляем блюдо из плана на неделю
+            Object.keys(weekPlan).forEach(key => {
+                if (weekPlan[key].name === dishes[index].name) {
+                    delete weekPlan[key];
+                }
+            });
+            
+            // Удаляем блюдо из списка
+            dishes.splice(index, 1);
+            
+            try {
+                await Promise.all([
+                    saveDishes(),
+                    saveWeekPlan()
+                ]);
+                
+                // Обновляем интерфейс
+                renderDishList();
+                renderWeekPlanner();
+                updateStatistics();
+            } catch (error) {
+                console.error('Ошибка удаления блюда:', error);
+                alert('Ошибка удаления. Попробуйте еще раз.');
+            }
+        }
+
+        // Сохранение блюда
+        async function saveDish() {
+            const name = document.getElementById('dish-name').value;
+            const description = document.getElementById('dish-description').value;
+            const calories = parseInt(document.getElementById('dish-calories').value);
+            const protein = parseFloat(document.getElementById('dish-protein').value);
+            const fat = parseFloat(document.getElementById('dish-fat').value);
+            const carbs = parseFloat(document.getElementById('dish-carbs').value);
+            const editIndex = parseInt(document.getElementById('edit-dish-index').value);
+            
+            // Получение изображения
+            const imageFile = document.getElementById('dish-image').files[0];
+            
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    completeSaveDish(name, description, calories, protein, fat, carbs, e.target.result, editIndex);
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                // Если изображение не выбрано, используем существующее при редактировании
+                const existingImage = editIndex !== -1 ? dishes[editIndex].image : null;
+                completeSaveDish(name, description, calories, protein, fat, carbs, existingImage, editIndex);
+            }
+        }
+
+        // Завершение сохранения блюда после обработки изображения
+        async function completeSaveDish(name, description, calories, protein, fat, carbs, imageBase64, editIndex) {
+            // Сбор ингредиентов
+            const ingredients = [];
+            document.querySelectorAll('.ingredient-item').forEach(item => {
+                const name = item.querySelector('.ingredient-name').value;
+                const amount = item.querySelector('.ingredient-amount').value;
+                const unit = item.querySelector('.ingredient-unit').value;
+                
+                if (name && amount) {
+                    ingredients.push({ name, amount, unit });
+                }
+            });
+            
+            // Сбор шагов приготовления
+            const steps = [];
+            document.querySelectorAll('.step-item').forEach(item => {
+                const description = item.querySelector('.step-description').value;
+                
+                if (description) {
+                    steps.push(description);
+                }
+            });
+            
+            const dishData = {
+                name,
+                description,
+                calories,
+                protein,
+                fat,
+                carbs,
+                ingredients,
+                steps,
+                image: imageBase64
+            };
+            
+            if (editIndex !== -1) {
+                // Обновляем существующее блюдо
+                dishes[editIndex] = dishData;
+                
+                // Обновляем блюдо в плане на неделю
+                Object.keys(weekPlan).forEach(key => {
+                    if (weekPlan[key].name === name) {
+                        weekPlan[key] = dishData;
+                    }
+                });
+            } else {
+                // Добавляем новое блюдо
+                dishes.push(dishData);
+            }
+            
+            try {
+                await Promise.all([
+                    saveDishes(),
+                    saveWeekPlan()
+                ]);
+                
+                // Сбрасываем форму
+                resetDishForm();
+                
+                // Обновление интерфейса
+                renderDishList();
+                renderWeekPlanner();
+                updateStatistics();
+            } catch (error) {
+                console.error('Ошибка сохранения блюда:', error);
+                alert('Ошибка сохранения. Попробуйте еще раз.');
+            }
+        }
+
+        // Сброс формы блюда
+        function resetDishForm() {
+            document.getElementById('dish-form').reset();
+            document.getElementById('dish-form-title').textContent = 'Добавить новое блюдо';
+            document.getElementById('edit-dish-index').value = '-1';
+            document.getElementById('ingredient-list').innerHTML = '';
+            document.getElementById('step-list').innerHTML = '';
+            document.getElementById('image-preview').innerHTML = 'Превью изображения';
+            document.getElementById('cancel-edit').style.display = 'none';
+            document.getElementById('save-dish-btn').textContent = 'Сохранить блюдо';
+            
+            // Добавляем пустые поля по умолчанию
+            addIngredientField();
+            addStepField();
+        }
+
+        // Добавление поля ингредиента
+        function addIngredientField(name = '', amount = '', unit = 'г') {
+            const ingredientList = document.getElementById('ingredient-list');
+            const ingredientItem = document.createElement('div');
+            ingredientItem.className = 'ingredient-item';
+            
+            let unitOptions = '';
+            measurementUnits.forEach(u => {
+                unitOptions += `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`;
+            });
+            
+            ingredientItem.innerHTML = `
+                <input type="text" placeholder="Название ингредиента" class="ingredient-name" value="${name}">
+                <input type="text" placeholder="Количество" class="ingredient-amount" value="${amount}">
+                <select class="ingredient-unit">
+                    ${unitOptions}
+                </select>
+                <button type="button" class="btn btn-danger btn-small remove-ingredient">×</button>
+            `;
+            
+            ingredientItem.querySelector('.remove-ingredient').addEventListener('click', function() {
+                ingredientItem.remove();
+            });
+            
+            ingredientList.appendChild(ingredientItem);
+        }
+
+        // Добавление поля шага приготовления
+        function addStepField(description = '') {
+            const stepList = document.getElementById('step-list');
+            const stepItem = document.createElement('div');
+            stepItem.className = 'step-item';
+            stepItem.innerHTML = `
+                <input type="text" placeholder="Описание шага" class="step-description" value="${description}">
+                <button type="button" class="btn btn-danger btn-small remove-step">×</button>
+            `;
+            
+            stepItem.querySelector('.remove-step').addEventListener('click', function() {
+                stepItem.remove();
+            });
+            
+            stepList.appendChild(stepItem);
+        }
+
+        // Обновление сводки за неделю
+        function updateWeekSummary() {
+            let totalCalories = 0;
+            let totalProtein = 0;
+            let totalFat = 0;
+            let totalCarbs = 0;
+            
+            Object.values(weekPlan).forEach(dish => {
+                totalCalories += dish.calories;
+                totalProtein += dish.protein;
+                totalFat += dish.fat;
+                totalCarbs += dish.carbs;
+            });
+            
+            document.getElementById('weekly-calories').textContent = totalCalories;
+            document.getElementById('weekly-protein').textContent = totalProtein.toFixed(1);
+            document.getElementById('weekly-fat').textContent = totalFat.toFixed(1);
+            document.getElementById('weekly-carbs').textContent = totalCarbs.toFixed(1);
+        }
+
+        // Обновление списка покупок
+        function updateShoppingList() {
+            const currentWeekKey = `week-${currentWeek}`;
+            const weekIngredients = {};
+            
+            // Собираем все ингредиенты из блюд на текущей неделе
+            Object.values(weekPlan).forEach(dish => {
+                if (dish.ingredients) {
+                    dish.ingredients.forEach(ingredient => {
+                        const key = `${ingredient.name}-${ingredient.unit}`;
+                        if (!weekIngredients[key]) {
+                            weekIngredients[key] = {
+                                name: ingredient.name,
+                                amount: 0,
+                                unit: ingredient.unit,
+                                checked: false
+                            };
+                        }
+                        
+                        // Пытаемся преобразовать количество в число
+                        const amount = parseFloat(ingredient.amount);
+                        if (!isNaN(amount)) {
+                            weekIngredients[key].amount += amount;
+                        }
+                    });
+                }
+            });
+            
+            // Преобразуем объект в массив
+            const shoppingArray = Object.values(weekIngredients);
+            
+            // Сохраняем состояние отмеченных элементов
+            const existingList = shoppingList[currentWeekKey] || [];
+            const checkedItems = {};
+            existingList.forEach(item => {
+                const key = `${item.name}-${item.unit}`;
+                if (item.checked) {
+                    checkedItems[key] = true;
+                }
+            });
+            
+            // Обновляем состояние отмеченных элементов
+            shoppingArray.forEach(item => {
+                const key = `${item.name}-${item.unit}`;
+                if (checkedItems[key]) {
+                    item.checked = true;
+                }
+            });
+            
+            shoppingList[currentWeekKey] = shoppingArray;
+            
+            // Сохраняем на сервер
+            saveShoppingList().catch(error => {
+                console.error('Ошибка сохранения списка покупок:', error);
+            });
+        }
+
+        // Обновление статистики
+        function updateStatistics() {
+            // Общее количество блюд
+            document.getElementById('total-dishes').textContent = dishes.length;
+            
+            // Средние калории в день
+            let totalWeeklyCalories = 0;
+            Object.values(weekPlan).forEach(dish => {
+                totalWeeklyCalories += dish.calories;
+            });
+            
+            const avgCalories = dishes.length > 0 ? 
+                Math.round(totalWeeklyCalories / 7) : 0;
+            document.getElementById('avg-calories').textContent = avgCalories;
+            
+            // Самое частое блюдо
+            const dishCount = {};
+            Object.values(weekPlan).forEach(dish => {
+                dishCount[dish.name] = (dishCount[dish.name] || 0) + 1;
+            });
+            
+            let favoriteDish = '-';
+            let maxCount = 0;
+            
+            for (const [name, count] of Object.entries(dishCount)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    favoriteDish = name;
+                }
+            }
+            
+            document.getElementById('favorite-dish').textContent = favoriteDish;
+            
+            // Самый калорийный день
+            const dayCalories = {};
+            Object.entries(weekPlan).forEach(([key, dish]) => {
+                const day = key.split('-')[1];
+                dayCalories[day] = (dayCalories[day] || 0) + dish.calories;
+            });
+            
+            let maxCaloriesDay = 'Понедельник';
+            let maxCalories = 0;
+            
+            for (const [day, calories] of Object.entries(dayCalories)) {
+                if (calories > maxCalories) {
+                    maxCalories = calories;
+                    maxCaloriesDay = day;
+                }
+            }
+            
+            document.getElementById('max-calories-day').textContent = maxCaloriesDay;
+            document.getElementById('max-calories-value').textContent = `${maxCalories} ккал`;
+        }
+
+        // Инициализация пустых полей при загрузке
+        addIngredientField();
+        addStepField();
+        updateWeekTitle();
+    </script>
+</body>
+</html>
