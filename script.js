@@ -4,6 +4,10 @@ let weekPlan = {};
 let shoppingList = {};
 let categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты']; // Стандартные категории
 let currentCategory = 'all';
+let mealsPerDay = 3;
+let searchQuery = '';
+let modalSearchQuery = '';
+let modalCategoryFilter = 'all';
 let currentMealSlot = null;
 let dishToDelete = null;
 
@@ -100,8 +104,10 @@ async function loadFromGist() {
                 weekPlan = serverData.weekPlan || {};
                 shoppingList = serverData.shoppingList || {};
                 categories = serverData.categories || categories;
+                mealsPerDay = serverData.mealsPerDay || 3;
                 
                 // Обновляем интерфейс
+                document.getElementById('meals-per-day').value = mealsPerDay;
                 renderWeekPlanner();
                 renderCategoryList();
                 renderDishList();
@@ -156,6 +162,7 @@ async function saveToGist() {
             weekPlan,
             shoppingList,
             categories,
+            mealsPerDay,
             lastSync: new Date().toISOString(),
             version: '1.0'
         };
@@ -360,6 +367,23 @@ function updateCategoriesSelect() {
     });
 }
 
+// Обновление фильтра категорий в модальном окне
+function updateModalCategoryFilter() {
+    const categoryFilter = document.getElementById('modal-category-filter');
+    categoryFilter.innerHTML = '<option value="all">Все категории</option>';
+    
+    const sortedCategories = [...categories].sort();
+    
+    sortedCategories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+    });
+    
+    categoryFilter.value = modalCategoryFilter;
+}
+
 // Получение выбранных категорий из формы
 function getSelectedCategories() {
     const selectedCategories = [];
@@ -407,6 +431,7 @@ async function addCategory() {
     document.getElementById('new-category-name').value = '';
     renderCategoriesManagement();
     updateCategoriesSelect();
+    updateModalCategoryFilter();
     renderCategoryList();
 }
 
@@ -430,6 +455,7 @@ async function deleteCategory(categoryName) {
     
     renderCategoriesManagement();
     updateCategoriesSelect();
+    updateModalCategoryFilter();
     renderCategoryList();
     renderDishList();
 }
@@ -442,7 +468,6 @@ function renderWeekPlanner() {
     weekPlanner.innerHTML = '';
     
     const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
-    const meals = ['Завтрак', 'Обед', 'Ужин'];
     
     days.forEach(day => {
         const dayCard = document.createElement('div');
@@ -452,14 +477,21 @@ function renderWeekPlanner() {
         dayTitle.textContent = day;
         dayCard.appendChild(dayTitle);
         
-        meals.forEach(meal => {
+        // Создаем слоты для приемов пищи
+        for (let i = 1; i <= mealsPerDay; i++) {
             const mealSlot = document.createElement('div');
             mealSlot.className = 'meal-slot';
             mealSlot.setAttribute('data-day', day);
-            mealSlot.setAttribute('data-meal', meal);
+            mealSlot.setAttribute('data-meal', i);
             
-            const mealKey = `${day}-${meal}`;
+            const mealKey = `${day}-${i}`;
             const dish = weekPlan[mealKey];
+            
+            // Добавляем номер приема пищи
+            const mealNumber = document.createElement('div');
+            mealNumber.className = 'meal-number';
+            mealNumber.textContent = i;
+            mealSlot.appendChild(mealNumber);
             
             if (dish) {
                 let imageHtml = '';
@@ -467,9 +499,8 @@ function renderWeekPlanner() {
                     imageHtml = `<img src="${dish.image}" alt="${dish.name}" class="dish-image">`;
                 }
                 
-                mealSlot.innerHTML = `
+                mealSlot.innerHTML += `
                     ${imageHtml}
-                    <strong>${meal}</strong>
                     <div>${dish.name}</div>
                     <div class="nutrition-info">
                         <span>${dish.calories} ккал</span>
@@ -486,19 +517,19 @@ function renderWeekPlanner() {
                 });
             } else {
                 mealSlot.className += ' empty';
-                mealSlot.innerHTML = `${meal} - Добавить блюдо`;
+                mealSlot.innerHTML += 'Добавить блюдо';
             }
             
             mealSlot.addEventListener('click', function() {
                 currentMealSlot = {
                     day: day,
-                    meal: meal
+                    meal: i
                 };
                 openDishSelectModal();
             });
             
             dayCard.appendChild(mealSlot);
-        });
+        }
         
         weekPlanner.appendChild(dayCard);
     });
@@ -507,25 +538,41 @@ function renderWeekPlanner() {
     updateShoppingList();
 }
 
-// Рендеринг списка блюд с фильтрацией по категориям
+// Рендеринг списка блюд с фильтрацией по категориям и поиском
 function renderDishList() {
     const dishList = document.getElementById('dish-list');
     dishList.innerHTML = '';
     
     let filteredDishes = dishes;
     
+    // Фильтрация по категории
     if (currentCategory !== 'all') {
-        filteredDishes = dishes.filter(dish => 
+        filteredDishes = filteredDishes.filter(dish => 
             dish.categories && dish.categories.includes(currentCategory)
         );
     }
     
+    // Фильтрация по поисковому запросу
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filteredDishes = filteredDishes.filter(dish => 
+            dish.name.toLowerCase().includes(query)
+        );
+    }
+    
     if (filteredDishes.length === 0) {
-        if (currentCategory === 'all') {
-            dishList.innerHTML = '<p>У вас пока нет сохраненных блюд. Добавьте первое блюдо!</p>';
-        } else {
-            dishList.innerHTML = `<p>В категории "${currentCategory}" пока нет блюд.</p>`;
+        let message = 'У вас пока нет сохраненных блюд. Добавьте первое блюдо!';
+        if (currentCategory !== 'all' || searchQuery) {
+            message = 'Блюда по вашему запросу не найдены.';
+            if (currentCategory !== 'all' && searchQuery) {
+                message = `В категории "${currentCategory}" нет блюд, содержащих "${searchQuery}" в названии.`;
+            } else if (currentCategory !== 'all') {
+                message = `В категории "${currentCategory}" пока нет блюд.`;
+            } else if (searchQuery) {
+                message = `Блюда, содержащие "${searchQuery}" в названии, не найдены.`;
+            }
         }
+        dishList.innerHTML = `<p>${message}</p>`;
         return;
     }
     
@@ -708,55 +755,102 @@ async function clearWeek() {
     renderWeekPlanner();
 }
 
+// Обновление количества приемов пищи
+async function updateMealsPerDay() {
+    const newValue = parseInt(document.getElementById('meals-per-day').value);
+    if (newValue >= 1 && newValue <= 10) {
+        mealsPerDay = newValue;
+        await saveToGist();
+        renderWeekPlanner();
+    } else {
+        document.getElementById('meals-per-day').value = mealsPerDay;
+    }
+}
+
 // Открытие модального окна выбора блюда
 function openDishSelectModal() {
     const modal = document.getElementById('dish-select-modal');
     const dishList = document.getElementById('modal-dish-list');
     
-    dishList.innerHTML = '';
+    // Сбрасываем фильтры при открытии
+    modalSearchQuery = '';
+    modalCategoryFilter = 'all';
+    document.getElementById('modal-dish-search').value = '';
+    document.getElementById('modal-category-filter').value = 'all';
     
-    if (dishes.length === 0) {
-        dishList.innerHTML = '<p>У вас пока нет сохраненных блюд. Добавьте первое блюдо!</p>';
-    } else {
-        dishes.forEach((dish, index) => {
-            const dishCard = document.createElement('div');
-            dishCard.className = 'dish-card';
-            
-            let imageHtml = '';
-            if (dish.image) {
-                imageHtml = `<img src="${dish.image}" alt="${dish.name}" class="dish-image">`;
-            }
-            
-            let categoriesHtml = '';
-            if (dish.categories && dish.categories.length > 0) {
-                categoriesHtml = dish.categories.map(cat => 
-                    `<span class="dish-category-badge">${cat}</span>`
-                ).join('');
-            }
-            
-            dishCard.innerHTML = `
-                ${imageHtml}
-                <h3>${dish.name}</h3>
-                <div class="dish-categories">${categoriesHtml}</div>
-                <p>${dish.description || 'Описание отсутствует'}</p>
-                <div class="nutrition-info">
-                    <div><span class="nutrition-value">${dish.calories}</span> ккал</div>
-                    <div>Б: <span class="nutrition-value">${dish.protein}</span> г</div>
-                    <div>Ж: <span class="nutrition-value">${dish.fat}</span> г</div>
-                    <div>У: <span class="nutrition-value">${dish.carbs}</span> г</div>
-                </div>
-            `;
-            
-            dishCard.addEventListener('click', function() {
-                assignDishToSlot(index);
-                modal.classList.remove('active');
-            });
-            
-            dishList.appendChild(dishCard);
-        });
-    }
+    updateModalCategoryFilter();
+    renderModalDishList();
     
     modal.classList.add('active');
+}
+
+// Рендеринг списка блюд в модальном окне с фильтрацией
+function renderModalDishList() {
+    const dishList = document.getElementById('modal-dish-list');
+    dishList.innerHTML = '';
+    
+    let filteredDishes = dishes;
+    
+    // Фильтрация по категории
+    if (modalCategoryFilter !== 'all') {
+        filteredDishes = filteredDishes.filter(dish => 
+            dish.categories && dish.categories.includes(modalCategoryFilter)
+        );
+    }
+    
+    // Фильтрация по поисковому запросу
+    if (modalSearchQuery) {
+        const query = modalSearchQuery.toLowerCase();
+        filteredDishes = filteredDishes.filter(dish => 
+            dish.name.toLowerCase().includes(query)
+        );
+    }
+    
+    if (filteredDishes.length === 0) {
+        let message = 'У вас пока нет сохраненных блюд. Добавьте первое блюдо!';
+        if (modalCategoryFilter !== 'all' || modalSearchQuery) {
+            message = 'Блюда по вашему запросу не найдены.';
+        }
+        dishList.innerHTML = `<p>${message}</p>`;
+        return;
+    }
+    
+    filteredDishes.forEach((dish, index) => {
+        const dishCard = document.createElement('div');
+        dishCard.className = 'dish-card';
+        
+        let imageHtml = '';
+        if (dish.image) {
+            imageHtml = `<img src="${dish.image}" alt="${dish.name}" class="dish-image">`;
+        }
+        
+        let categoriesHtml = '';
+        if (dish.categories && dish.categories.length > 0) {
+            categoriesHtml = dish.categories.map(cat => 
+                `<span class="dish-category-badge">${cat}</span>`
+            ).join('');
+        }
+        
+        dishCard.innerHTML = `
+            ${imageHtml}
+            <h3>${dish.name}</h3>
+            <div class="dish-categories">${categoriesHtml}</div>
+            <p>${dish.description || 'Описание отсутствует'}</p>
+            <div class="nutrition-info">
+                <div><span class="nutrition-value">${dish.calories}</span> ккал</div>
+                <div>Б: <span class="nutrition-value">${dish.protein}</span> г</div>
+                <div>Ж: <span class="nutrition-value">${dish.fat}</span> г</div>
+                <div>У: <span class="nutrition-value">${dish.carbs}</span> г</div>
+            </div>
+        `;
+        
+        dishCard.addEventListener('click', function() {
+            assignDishToSlot(index);
+            modal.classList.remove('active');
+        });
+        
+        dishList.appendChild(dishCard);
+    });
 }
 
 // Открытие модального окна рецепта
@@ -1127,6 +1221,7 @@ function exportData() {
         weekPlan,
         shoppingList,
         categories,
+        mealsPerDay,
         exportDate: new Date().toISOString()
     };
     
@@ -1153,14 +1248,17 @@ function importData(event) {
             weekPlan = data.weekPlan || weekPlan;
             shoppingList = data.shoppingList || shoppingList;
             categories = data.categories || categories;
+            mealsPerDay = data.mealsPerDay || 3;
             
             await saveToGist();
             
+            document.getElementById('meals-per-day').value = mealsPerDay;
             renderWeekPlanner();
             renderCategoryList();
             renderDishList();
             renderCategoriesManagement();
             updateCategoriesSelect();
+            updateModalCategoryFilter();
             renderShoppingList();
             updateWeekSummary();
             
@@ -1179,6 +1277,26 @@ function importData(event) {
 function setupEventListeners() {
     // Очистка недели
     document.getElementById('clear-week').addEventListener('click', clearWeek);
+    
+    // Настройка приемов пищи
+    document.getElementById('meals-per-day').addEventListener('change', updateMealsPerDay);
+    
+    // Поиск в разделе "Мои блюда"
+    document.getElementById('dish-search').addEventListener('input', function(e) {
+        searchQuery = e.target.value;
+        renderDishList();
+    });
+    
+    // Поиск и фильтрация в модальном окне
+    document.getElementById('modal-dish-search').addEventListener('input', function(e) {
+        modalSearchQuery = e.target.value;
+        renderModalDishList();
+    });
+    
+    document.getElementById('modal-category-filter').addEventListener('change', function(e) {
+        modalCategoryFilter = e.target.value;
+        renderModalDishList();
+    });
     
     // Форма блюда
     document.getElementById('dish-form').addEventListener('submit', function(e) {
@@ -1247,12 +1365,15 @@ function setupEventListeners() {
             weekPlan = {};
             shoppingList = {};
             categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'];
+            mealsPerDay = 3;
+            document.getElementById('meals-per-day').value = mealsPerDay;
             updateSyncUI();
             renderWeekPlanner();
             renderCategoryList();
             renderDishList();
             renderCategoriesManagement();
             updateCategoriesSelect();
+            updateModalCategoryFilter();
             renderShoppingList();
             updateWeekSummary();
         }

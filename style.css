@@ -108,6 +108,7 @@ h2 {
     padding: 15px;
     box-shadow: var(--shadow);
     transition: var(--transition);
+    position: relative;
 }
 
 .day-card:hover {
@@ -128,6 +129,8 @@ h2 {
     margin-bottom: 10px;
     cursor: pointer;
     transition: var(--transition);
+    position: relative;
+    padding-left: 35px;
 }
 
 .meal-slot:hover {
@@ -140,6 +143,23 @@ h2 {
     color: #9e9e9e;
     text-align: center;
     font-style: italic;
+}
+
+.meal-number {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: var(--primary-color);
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
 }
 
 .dish-image {
@@ -371,10 +391,25 @@ textarea {
 .modal-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 1px solid #eee;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    flex: 1;
+    min-width: 200px;
+}
+
+.modal-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 .close-modal {
@@ -384,6 +419,7 @@ textarea {
     cursor: pointer;
     color: #757575;
     transition: var(--transition);
+    flex-shrink: 0;
 }
 
 .close-modal:hover {
@@ -427,6 +463,8 @@ textarea {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .week-title {
@@ -434,6 +472,62 @@ textarea {
     font-weight: 600;
     color: var(--dark-color);
     margin: 0;
+}
+
+.week-controls {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.meals-config {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.meals-input {
+    width: 70px;
+    text-align: center;
+}
+
+/* Стили для поиска */
+.dishes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.search-container {
+    position: relative;
+    min-width: 250px;
+}
+
+.search-input {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    transition: var(--transition);
+    width: 100%;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.category-filter {
+    min-width: 180px;
+}
+
+.category-filter select {
+    padding: 10px;
 }
 
 /* Стили для категорий */
@@ -766,6 +860,17 @@ textarea {
         align-items: flex-start;
     }
     
+    .week-controls {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+    
+    .meals-config {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
     .category-input-group {
         flex-direction: column;
     }
@@ -778,5 +883,28 @@ textarea {
     .category-checkbox-label {
         width: 100%;
         text-align: center;
+    }
+    
+    .dishes-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .search-container {
+        width: 100%;
+    }
+    
+    .modal-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .modal-controls {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .category-filter, .search-container {
+        width: 100%;
     }
 }

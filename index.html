@@ -28,7 +28,13 @@
         <section id="week-plan" class="section active">
             <div class="week-navigation">
                 <h2 class="week-title">План на неделю</h2>
-                <button class="btn btn-danger" id="clear-week">Очистить неделю</button>
+                <div class="week-controls">
+                    <div class="meals-config">
+                        <label for="meals-per-day">Приемов пищи в день:</label>
+                        <input type="number" id="meals-per-day" min="1" max="10" value="3" class="meals-input">
+                    </div>
+                    <button class="btn btn-danger" id="clear-week">Очистить неделю</button>
+                </div>
             </div>
             
             <div class="week-planner" id="week-planner">
@@ -64,7 +70,12 @@
 
         <!-- Мои блюда -->
         <section id="dishes" class="section">
-            <h2>Мои блюда</h2>
+            <div class="dishes-header">
+                <h2>Мои блюда</h2>
+                <div class="search-container">
+                    <input type="text" id="dish-search" placeholder="Поиск по названию..." class="search-input">
+                </div>
+            </div>
             <div class="categories-sidebar">
                 <div class="category-list" id="category-list">
                     <!-- Динамически заполняется через JavaScript -->
@@ -228,6 +239,17 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Выберите блюдо</h3>
+                <div class="modal-controls">
+                    <div class="search-container">
+                        <input type="text" id="modal-dish-search" placeholder="Поиск по названию..." class="search-input">
+                    </div>
+                    <div class="category-filter">
+                        <select id="modal-category-filter">
+                            <option value="all">Все категории</option>
+                            <!-- Динамически заполняется через JavaScript -->
+                        </select>
+                    </div>
+                </div>
                 <button class="close-modal">&times;</button>
             </div>
             <div class="dish-list" id="modal-dish-list">
