@@ -7,68 +7,63 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Планировщик питания</h1>
-            <nav>
-                <ul>
-                    <li><a href="#" class="nav-link active" data-section="week-plan">План на неделю</a></li>
-                    <li><a href="#" class="nav-link" data-section="dishes">Мои блюда</a></li>
-                    <li><a href="#" class="nav-link" data-section="add-dish">Добавить блюдо</a></li>
-                    <li><a href="#" class="nav-link" data-section="categories">Категории</a></li>
-                    <li><a href="#" class="nav-link" data-section="shopping-list">Список покупок</a></li>
-                    <li><a href="#" class="nav-link" data-section="sync">Синхронизация</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
-
+<header>
     <div class="container">
-        <!-- План на неделю -->
-        <section id="week-plan" class="section active">
-            <div class="week-navigation">
-                <h2 class="week-title">План на неделю</h2>
-                <div class="week-controls">
-                    <div class="meals-config">
-                        <label for="meals-per-day">Приемов пищи в день:</label>
-                        <input type="number" id="meals-per-day" min="1" max="10" value="3" class="meals-input">
-                    </div>
-                    <button class="btn btn-danger" id="clear-week">Очистить неделю</button>
-                </div>
-            </div>
-            
-            <div class="week-planner" id="week-planner">
-                <!-- Динамически заполняется через JavaScript -->
-            </div>
-            
-            <div class="nutrition-summary">
-                <h3>Питание за неделю</h3>
-                <div class="stats-container">
-                    <div class="stat-card">
-                        <div class="stat-label">Калории</div>
-                        <div class="stat-value" id="weekly-calories">0</div>
-                        <div class="stat-label">ккал</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Белки</div>
-                        <div class="stat-value" id="weekly-protein">0</div>
-                        <div class="stat-label">г</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Жиры</div>
-                        <div class="stat-value" id="weekly-fat">0</div>
-                        <div class="stat-label">г</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Углеводы</div>
-                        <div class="stat-value" id="weekly-carbs">0</div>
-                        <div class="stat-label">г</div>
-                    </div>
-                </div>
-            </div>
-        </section>
+        <h1>Планировщик питания</h1>
+        <nav>
+            <ul>
+                <li><a href="#" class="nav-link active" data-section="week-plan">План на неделю</a></li>
+                <li><a href="#" class="nav-link" data-section="dishes">Мои блюда</a></li>
+                <li><a href="#" class="nav-link" data-section="add-dish">Добавить блюдо</a></li>
+                <li><a href="#" class="nav-link" data-section="categories">Категории</a></li>
+                <li><a href="#" class="nav-link" data-section="shopping-list">Список покупок</a></li>
+                <li><a href="#" class="nav-link" data-section="sync">Синхронизация</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
 
-        <!-- Мои блюда -->
+<div class="container">
+    <!-- План на неделю -->
+    <section id="week-plan" class="section active">
+        <div class="week-navigation">
+            <h2 class="week-title">План на неделю</h2>
+            <button class="btn btn-danger" id="clear-week">Очистить неделю</button>
+        </div>
+
+        <div class="week-planner" id="week-planner">
+            <!-- Динамически заполняется через JavaScript -->
+        </div>
+
+        <div class="nutrition-summary">
+            <h3>Питание за неделю</h3>
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-label">Калории</div>
+                    <div class="stat-value" id="weekly-calories">0</div>
+                    <div class="stat-label">ккал</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Белки</div>
+                    <div class="stat-value" id="weekly-protein">0</div>
+                    <div class="stat-label">г</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Жиры</div>
+                    <div class="stat-value" id="weekly-fat">0</div>
+                    <div class="stat-label">г</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Углеводы</div>
+                    <div class="stat-value" id="weekly-carbs">0</div>
+                    <div class="stat-label">г</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Мои блюда -->
         <section id="dishes" class="section">
             <div class="dishes-header">
                 <h2>Мои блюда</h2>

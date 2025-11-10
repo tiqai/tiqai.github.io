@@ -2,9 +2,17 @@
 let dishes = [];
 let weekPlan = {};
 let shoppingList = {};
-let categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты']; // Стандартные категории
+let categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'];
 let currentCategory = 'all';
-let mealsPerDay = 3;
+let mealsPerDay = {
+    'Понедельник': 3,
+    'Вторник': 3,
+    'Среда': 3,
+    'Четверг': 3,
+    'Пятница': 3,
+    'Суббота': 3,
+    'Воскресенье': 3
+};
 let searchQuery = '';
 let modalSearchQuery = '';
 let modalCategoryFilter = 'all';
@@ -104,10 +112,9 @@ async function loadFromGist() {
                 weekPlan = serverData.weekPlan || {};
                 shoppingList = serverData.shoppingList || {};
                 categories = serverData.categories || categories;
-                mealsPerDay = serverData.mealsPerDay || 3;
+                mealsPerDay = serverData.mealsPerDay || mealsPerDay;
                 
                 // Обновляем интерфейс
-                document.getElementById('meals-per-day').value = mealsPerDay;
                 renderWeekPlanner();
                 renderCategoryList();
                 renderDishList();
@@ -473,12 +480,51 @@ function renderWeekPlanner() {
         const dayCard = document.createElement('div');
         dayCard.className = 'day-card';
         
+        // Заголовок дня с контролами
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'day-header';
+        
         const dayTitle = document.createElement('h3');
+        dayTitle.className = 'day-title';
         dayTitle.textContent = day;
-        dayCard.appendChild(dayTitle);
+        
+        const dayControls = document.createElement('div');
+        dayControls.className = 'day-controls';
+        
+        const minusBtn = document.createElement('button');
+        minusBtn.className = 'control-btn';
+        minusBtn.innerHTML = '−';
+        minusBtn.title = 'Уменьшить количество приемов пищи';
+        minusBtn.addEventListener('click', function() {
+            changeMealsCount(day, -1);
+        });
+        
+        const mealsCount = document.createElement('span');
+        mealsCount.className = 'meals-count';
+        mealsCount.textContent = mealsPerDay[day];
+        
+        const plusBtn = document.createElement('button');
+        plusBtn.className = 'control-btn';
+        plusBtn.innerHTML = '+';
+        plusBtn.title = 'Увеличить количество приемов пищи';
+        plusBtn.addEventListener('click', function() {
+            changeMealsCount(day, 1);
+        });
+        
+        dayControls.appendChild(minusBtn);
+        dayControls.appendChild(mealsCount);
+        dayControls.appendChild(plusBtn);
+        
+        dayHeader.appendChild(dayTitle);
+        dayHeader.appendChild(dayControls);
+        dayCard.appendChild(dayHeader);
+        
+        // Контейнер для приемов пищи
+        const mealsContainer = document.createElement('div');
+        mealsContainer.className = 'meals-container';
         
         // Создаем слоты для приемов пищи
-        for (let i = 1; i <= mealsPerDay; i++) {
+        for (let i = 1; i <= mealsPerDay[day]; i++) {
             const mealSlot = document.createElement('div');
             mealSlot.className = 'meal-slot';
             mealSlot.setAttribute('data-day', day);
@@ -487,11 +533,13 @@ function renderWeekPlanner() {
             const mealKey = `${day}-${i}`;
             const dish = weekPlan[mealKey];
             
-            // Добавляем номер приема пищи
+            // Добавляем номер приема пищи (поверх картинки)
             const mealNumber = document.createElement('div');
             mealNumber.className = 'meal-number';
             mealNumber.textContent = i;
-            mealSlot.appendChild(mealNumber);
+            
+            const mealContent = document.createElement('div');
+            mealContent.className = 'meal-content';
             
             if (dish) {
                 let imageHtml = '';
@@ -499,7 +547,7 @@ function renderWeekPlanner() {
                     imageHtml = `<img src="${dish.image}" alt="${dish.name}" class="dish-image">`;
                 }
                 
-                mealSlot.innerHTML += `
+                mealContent.innerHTML = `
                     ${imageHtml}
                     <div>${dish.name}</div>
                     <div class="nutrition-info">
@@ -508,7 +556,7 @@ function renderWeekPlanner() {
                     <button class="btn btn-small view-recipe-btn" style="margin-top: 5px; width: 100%;">Рецепт</button>
                 `;
                 
-                mealSlot.querySelector('.view-recipe-btn').addEventListener('click', function(e) {
+                mealContent.querySelector('.view-recipe-btn').addEventListener('click', function(e) {
                     e.stopPropagation();
                     const dishIndex = dishes.findIndex(d => d.name === dish.name);
                     if (dishIndex !== -1) {
@@ -517,8 +565,11 @@ function renderWeekPlanner() {
                 });
             } else {
                 mealSlot.className += ' empty';
-                mealSlot.innerHTML += 'Добавить блюдо';
+                mealContent.innerHTML = 'Добавить блюдо';
             }
+            
+            mealSlot.appendChild(mealNumber);
+            mealSlot.appendChild(mealContent);
             
             mealSlot.addEventListener('click', function() {
                 currentMealSlot = {
@@ -528,14 +579,36 @@ function renderWeekPlanner() {
                 openDishSelectModal();
             });
             
-            dayCard.appendChild(mealSlot);
+            mealsContainer.appendChild(mealSlot);
         }
         
+        dayCard.appendChild(mealsContainer);
         weekPlanner.appendChild(dayCard);
     });
     
     updateWeekSummary();
     updateShoppingList();
+}
+
+// Изменение количества приемов пищи для дня
+async function changeMealsCount(day, change) {
+    const newCount = mealsPerDay[day] + change;
+    
+    if (newCount < 1 || newCount > 10) {
+        return;
+    }
+    
+    // Удаляем блюда из удаляемых слотов
+    if (change < 0) {
+        for (let i = newCount + 1; i <= mealsPerDay[day]; i++) {
+            const mealKey = `${day}-${i}`;
+            delete weekPlan[mealKey];
+        }
+    }
+    
+    mealsPerDay[day] = newCount;
+    await saveToGist();
+    renderWeekPlanner();
 }
 
 // Рендеринг списка блюд с фильтрацией по категориям и поиском
@@ -753,18 +826,6 @@ async function clearWeek() {
     weekPlan = {};
     await saveToGist();
     renderWeekPlanner();
-}
-
-// Обновление количества приемов пищи
-async function updateMealsPerDay() {
-    const newValue = parseInt(document.getElementById('meals-per-day').value);
-    if (newValue >= 1 && newValue <= 10) {
-        mealsPerDay = newValue;
-        await saveToGist();
-        renderWeekPlanner();
-    } else {
-        document.getElementById('meals-per-day').value = mealsPerDay;
-    }
 }
 
 // Открытие модального окна выбора блюда
@@ -1248,11 +1309,10 @@ function importData(event) {
             weekPlan = data.weekPlan || weekPlan;
             shoppingList = data.shoppingList || shoppingList;
             categories = data.categories || categories;
-            mealsPerDay = data.mealsPerDay || 3;
+            mealsPerDay = data.mealsPerDay || mealsPerDay;
             
             await saveToGist();
             
-            document.getElementById('meals-per-day').value = mealsPerDay;
             renderWeekPlanner();
             renderCategoryList();
             renderDishList();
@@ -1277,9 +1337,6 @@ function importData(event) {
 function setupEventListeners() {
     // Очистка недели
     document.getElementById('clear-week').addEventListener('click', clearWeek);
-    
-    // Настройка приемов пищи
-    document.getElementById('meals-per-day').addEventListener('change', updateMealsPerDay);
     
     // Поиск в разделе "Мои блюда"
     document.getElementById('dish-search').addEventListener('input', function(e) {
@@ -1365,8 +1422,15 @@ function setupEventListeners() {
             weekPlan = {};
             shoppingList = {};
             categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'];
-            mealsPerDay = 3;
-            document.getElementById('meals-per-day').value = mealsPerDay;
+            mealsPerDay = {
+                'Понедельник': 3,
+                'Вторник': 3,
+                'Среда': 3,
+                'Четверг': 3,
+                'Пятница': 3,
+                'Суббота': 3,
+                'Воскресенье': 3
+            };
             updateSyncUI();
             renderWeekPlanner();
             renderCategoryList();
