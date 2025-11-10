@@ -418,10 +418,113 @@ textarea {
     margin-bottom: 20px;
 }
 
-.week-title {
+.week-title-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
     font-size: 1.2rem;
     font-weight: 600;
     color: var(--dark-color);
+}
+
+.date-input {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    text-align: center;
+    font-size: 1rem;
+    transition: var(--transition);
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.date-input.number {
+    width: 60px;
+}
+
+/* Стили для категорий */
+.categories-sidebar {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 20px;
+}
+
+.category-list {
+    background-color: var(--light-color);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    height: fit-content;
+}
+
+.category-item {
+    padding: 10px 15px;
+    margin-bottom: 5px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.category-item:hover {
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.category-item.active {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+}
+
+.category-item.all-dishes {
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 10px;
+    padding-bottom: 15px;
+    font-weight: 600;
+}
+
+.category-input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.category-input-group input {
+    flex: 1;
+}
+
+.categories-management {
+    margin-top: 20px;
+}
+
+.category-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.category-item-management {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: var(--light-color);
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.category-item-management:hover {
+    background-color: #e8f5e8;
+}
+
+.category-name {
+    font-weight: 500;
+}
+
+.category-stats {
+    font-size: 0.9rem;
+    color: #666;
 }
 
 /* Стили для списка покупок */
@@ -628,5 +731,22 @@ textarea {
     
     .shopping-item-actions {
         align-self: flex-end;
+    }
+    
+    .categories-sidebar {
+        grid-template-columns: 1fr;
+    }
+    
+    .week-navigation {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .week-title-container {
+        order: -1;
+    }
+    
+    .category-input-group {
+        flex-direction: column;
     }
 }

@@ -2,7 +2,11 @@
 let dishes = [];
 let weekPlan = {};
 let shoppingList = {};
+let categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты']; // Стандартные категории
 let currentWeek = 1;
+let currentMonth = 'Январь';
+let currentYear = 2023;
+let currentCategory = 'all';
 let currentMealSlot = null;
 let dishToDelete = null;
 
@@ -28,7 +32,10 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         // Показываем пустой интерфейс
         renderWeekPlanner();
+        renderCategoryList();
         renderDishList();
+        renderCategoriesManagement();
+        updateCategorySelect();
         renderShoppingList();
         updateStatistics();
     }
@@ -58,6 +65,11 @@ function initializeNavigation() {
             // При переходе на добавление блюда сбрасываем форму
             if (targetSection === 'add-dish') {
                 resetDishForm();
+            }
+            
+            // При переходе на категории обновляем список
+            if (targetSection === 'categories') {
+                renderCategoriesManagement();
             }
         });
     });
@@ -90,20 +102,25 @@ async function loadFromGist() {
                 dishes = serverData.dishes || [];
                 weekPlan = serverData.weekPlan || {};
                 shoppingList = serverData.shoppingList || {};
+                categories = serverData.categories || categories;
+                currentWeek = serverData.currentWeek || currentWeek;
+                currentMonth = serverData.currentMonth || currentMonth;
+                currentYear = serverData.currentYear || currentYear;
                 
                 // Обновляем интерфейс
                 renderWeekPlanner();
+                renderCategoryList();
                 renderDishList();
+                renderCategoriesManagement();
+                updateCategorySelect();
                 renderShoppingList();
                 updateStatistics();
+                updateWeekTitle();
                 
                 updateSyncStatus('synced', 'Данные загружены');
                 console.log('✅ Данные загружены с сервера');
             } else {
                 // Файл не найден, создаем пустые данные
-                dishes = [];
-                weekPlan = {};
-                shoppingList = {};
                 await saveToGist();
             }
         } else {
@@ -118,7 +135,10 @@ async function loadFromGist() {
         weekPlan = {};
         shoppingList = {};
         renderWeekPlanner();
+        renderCategoryList();
         renderDishList();
+        renderCategoriesManagement();
+        updateCategorySelect();
         renderShoppingList();
         updateStatistics();
     } finally {
@@ -142,6 +162,10 @@ async function saveToGist() {
             dishes,
             weekPlan,
             shoppingList,
+            categories,
+            currentWeek,
+            currentMonth,
+            currentYear,
             lastSync: new Date().toISOString(),
             version: '1.0'
         };
@@ -258,6 +282,134 @@ function updateSyncUI() {
     }
 }
 
+// ==================== КАТЕГОРИИ ====================
+
+// Рендеринг списка категорий
+function renderCategoryList() {
+    const categoryList = document.getElementById('category-list');
+    categoryList.innerHTML = '';
+    
+    // Добавляем категорию "Все блюда"
+    const allCategory = document.createElement('div');
+    allCategory.className = `category-item all-dishes ${currentCategory === 'all' ? 'active' : ''}`;
+    allCategory.textContent = 'Все блюда';
+    allCategory.addEventListener('click', function() {
+        currentCategory = 'all';
+        renderCategoryList();
+        renderDishList();
+    });
+    categoryList.appendChild(allCategory);
+    
+    // Добавляем остальные категории, отсортированные по алфавиту
+    const sortedCategories = [...categories].sort();
+    
+    sortedCategories.forEach(category => {
+        const categoryItem = document.createElement('div');
+        categoryItem.className = `category-item ${currentCategory === category ? 'active' : ''}`;
+        categoryItem.textContent = category;
+        categoryItem.addEventListener('click', function() {
+            currentCategory = category;
+            renderCategoryList();
+            renderDishList();
+        });
+        categoryList.appendChild(categoryItem);
+    });
+}
+
+// Рендеринг управления категориями
+function renderCategoriesManagement() {
+    const categoryItems = document.getElementById('category-items');
+    categoryItems.innerHTML = '';
+    
+    const sortedCategories = [...categories].sort();
+    
+    if (sortedCategories.length === 0) {
+        categoryItems.innerHTML = '<p>У вас пока нет категорий. Добавьте первую категорию!</p>';
+        return;
+    }
+    
+    sortedCategories.forEach(category => {
+        const categoryItem = document.createElement('div');
+        categoryItem.className = 'category-item-management';
+        
+        const dishesInCategory = dishes.filter(dish => dish.category === category).length;
+        
+        categoryItem.innerHTML = `
+            <div class="category-name">${category}</div>
+            <div class="category-stats">${dishesInCategory} блюд</div>
+            <button class="btn btn-danger btn-small delete-category" data-category="${category}">×</button>
+        `;
+        
+        categoryItem.querySelector('.delete-category').addEventListener('click', function() {
+            deleteCategory(category);
+        });
+        
+        categoryItems.appendChild(categoryItem);
+    });
+}
+
+// Обновление выпадающего списка категорий
+function updateCategorySelect() {
+    const categorySelect = document.getElementById('dish-category');
+    categorySelect.innerHTML = '<option value="">Выберите категорию</option>';
+    
+    const sortedCategories = [...categories].sort();
+    
+    sortedCategories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categorySelect.appendChild(option);
+    });
+}
+
+// Добавление новой категории
+async function addCategory() {
+    const categoryName = document.getElementById('new-category-name').value.trim();
+    
+    if (!categoryName) {
+        alert('Введите название категории');
+        return;
+    }
+    
+    if (categories.includes(categoryName)) {
+        alert('Категория с таким названием уже существует');
+        return;
+    }
+    
+    categories.push(categoryName);
+    await saveToGist();
+    
+    document.getElementById('new-category-name').value = '';
+    renderCategoriesManagement();
+    updateCategorySelect();
+    renderCategoryList();
+}
+
+// Удаление категории
+async function deleteCategory(categoryName) {
+    if (!confirm(`Удалить категорию "${categoryName}"? Блюда в этой категории будут перемещены в категорию "Без категории".`)) {
+        return;
+    }
+    
+    // Перемещаем блюда в категорию "Без категории"
+    dishes.forEach(dish => {
+        if (dish.category === categoryName) {
+            dish.category = '';
+        }
+    });
+    
+    // Удаляем категорию
+    categories = categories.filter(cat => cat !== categoryName);
+    
+    await saveToGist();
+    
+    renderCategoriesManagement();
+    updateCategorySelect();
+    renderCategoryList();
+    renderDishList();
+}
+
 // ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
 
 // Рендеринг планировщика на неделю
@@ -282,7 +434,7 @@ function renderWeekPlanner() {
             mealSlot.setAttribute('data-day', day);
             mealSlot.setAttribute('data-meal', meal);
             
-            const mealKey = `${currentWeek}-${day}-${meal}`;
+            const mealKey = `${currentWeek}-${currentMonth}-${currentYear}-${day}-${meal}`;
             const dish = weekPlan[mealKey];
             
             if (dish) {
@@ -316,6 +468,8 @@ function renderWeekPlanner() {
             mealSlot.addEventListener('click', function() {
                 currentMealSlot = {
                     week: currentWeek,
+                    month: currentMonth,
+                    year: currentYear,
                     day: day,
                     meal: meal
                 };
@@ -332,17 +486,27 @@ function renderWeekPlanner() {
     updateShoppingList();
 }
 
-// Рендеринг списка блюд
+// Рендеринг списка блюд с фильтрацией по категориям
 function renderDishList() {
     const dishList = document.getElementById('dish-list');
     dishList.innerHTML = '';
     
-    if (dishes.length === 0) {
-        dishList.innerHTML = '<p>У вас пока нет сохраненных блюд. Добавьте первое блюдо!</p>';
+    let filteredDishes = dishes;
+    
+    if (currentCategory !== 'all') {
+        filteredDishes = dishes.filter(dish => dish.category === currentCategory);
+    }
+    
+    if (filteredDishes.length === 0) {
+        if (currentCategory === 'all') {
+            dishList.innerHTML = '<p>У вас пока нет сохраненных блюд. Добавьте первое блюдо!</p>';
+        } else {
+            dishList.innerHTML = `<p>В категории "${currentCategory}" пока нет блюд.</p>`;
+        }
         return;
     }
     
-    dishes.forEach((dish, index) => {
+    filteredDishes.forEach((dish, index) => {
         const dishCard = document.createElement('div');
         dishCard.className = 'dish-card';
         
@@ -354,6 +518,7 @@ function renderDishList() {
         dishCard.innerHTML = `
             ${imageHtml}
             <h3>${dish.name}</h3>
+            <div class="dish-category-badge">${dish.category || 'Без категории'}</div>
             <p>${dish.description || 'Описание отсутствует'}</p>
             <div class="nutrition-info">
                 <div><span class="nutrition-value">${dish.calories}</span> ккал</div>
@@ -366,13 +531,19 @@ function renderDishList() {
         
         dishCard.addEventListener('click', function(e) {
             if (!e.target.classList.contains('view-recipe-btn')) {
-                openRecipeModal(index);
+                const globalIndex = dishes.findIndex(d => d.name === dish.name);
+                if (globalIndex !== -1) {
+                    openRecipeModal(globalIndex);
+                }
             }
         });
         
         dishCard.querySelector('.view-recipe-btn').addEventListener('click', function(e) {
             e.stopPropagation();
-            openRecipeModal(index);
+            const globalIndex = dishes.findIndex(d => d.name === dish.name);
+            if (globalIndex !== -1) {
+                openRecipeModal(globalIndex);
+            }
         });
         
         dishList.appendChild(dishCard);
@@ -384,7 +555,7 @@ function renderShoppingList() {
     const shoppingListContainer = document.getElementById('shopping-list-container');
     shoppingListContainer.innerHTML = '';
     
-    const currentWeekKey = `week-${currentWeek}`;
+    const currentWeekKey = `week-${currentWeek}-${currentMonth}-${currentYear}`;
     const weekShoppingList = shoppingList[currentWeekKey] || [];
     
     if (weekShoppingList.length === 0) {
@@ -459,7 +630,7 @@ function handleDrop(e) {
     }
     
     if (dragSrcEl !== this) {
-        const currentWeekKey = `week-${currentWeek}`;
+        const currentWeekKey = `week-${currentWeek}-${currentMonth}-${currentYear}`;
         const weekShoppingList = shoppingList[currentWeekKey] || [];
         
         const fromIndex = parseInt(dragSrcEl.getAttribute('data-index'));
@@ -489,7 +660,7 @@ function handleDragEnd(e) {
 async function assignDishToSlot(dishIndex) {
     if (!currentMealSlot) return;
     
-    const mealKey = `${currentMealSlot.week}-${currentMealSlot.day}-${currentMealSlot.meal}`;
+    const mealKey = `${currentMealSlot.week}-${currentMealSlot.month}-${currentMealSlot.year}-${currentMealSlot.day}-${currentMealSlot.meal}`;
     weekPlan[mealKey] = dishes[dishIndex];
     
     await saveToGist();
@@ -518,6 +689,7 @@ function openDishSelectModal() {
             dishCard.innerHTML = `
                 ${imageHtml}
                 <h3>${dish.name}</h3>
+                <div class="dish-category-badge">${dish.category || 'Без категории'}</div>
                 <p>${dish.description || 'Описание отсутствует'}</p>
                 <div class="nutrition-info">
                     <div><span class="nutrition-value">${dish.calories}</span> ккал</div>
@@ -572,6 +744,7 @@ function openRecipeModal(dishIndex) {
     document.getElementById('recipe-content').innerHTML = `
         ${imageHtml}
         <div class="recipe-section">
+            <p><strong>Категория:</strong> ${dish.category || 'Без категории'}</p>
             <p><strong>Описание:</strong> ${dish.description || 'Отсутствует'}</p>
         </div>
         <div class="recipe-section">
@@ -622,6 +795,7 @@ function editDish(index) {
     document.getElementById('dish-form-title').textContent = 'Редактировать блюдо';
     document.getElementById('edit-dish-index').value = index;
     document.getElementById('dish-name').value = dish.name;
+    document.getElementById('dish-category').value = dish.category || '';
     document.getElementById('dish-description').value = dish.description || '';
     document.getElementById('dish-calories').value = dish.calories;
     document.getElementById('dish-protein').value = dish.protein;
@@ -663,8 +837,11 @@ function editDish(index) {
 
 // Удаление блюда
 async function deleteDish(index) {
+    const dishName = dishes[index].name;
+    
+    // Удаляем блюдо из плана на неделю
     Object.keys(weekPlan).forEach(key => {
-        if (weekPlan[key].name === dishes[index].name) {
+        if (weekPlan[key].name === dishName) {
             delete weekPlan[key];
         }
     });
@@ -681,6 +858,7 @@ async function deleteDish(index) {
 // Сохранение блюда
 async function saveDish() {
     const name = document.getElementById('dish-name').value;
+    const category = document.getElementById('dish-category').value;
     const description = document.getElementById('dish-description').value;
     const calories = parseInt(document.getElementById('dish-calories').value);
     const protein = parseFloat(document.getElementById('dish-protein').value);
@@ -693,17 +871,17 @@ async function saveDish() {
     if (imageFile) {
         const reader = new FileReader();
         reader.onload = async function(e) {
-            await completeSaveDish(name, description, calories, protein, fat, carbs, e.target.result, editIndex);
+            await completeSaveDish(name, category, description, calories, protein, fat, carbs, e.target.result, editIndex);
         };
         reader.readAsDataURL(imageFile);
     } else {
         const existingImage = editIndex !== -1 ? dishes[editIndex].image : null;
-        await completeSaveDish(name, description, calories, protein, fat, carbs, existingImage, editIndex);
+        await completeSaveDish(name, category, description, calories, protein, fat, carbs, existingImage, editIndex);
     }
 }
 
 // Завершение сохранения блюда
-async function completeSaveDish(name, description, calories, protein, fat, carbs, imageBase64, editIndex) {
+async function completeSaveDish(name, category, description, calories, protein, fat, carbs, imageBase64, editIndex) {
     const ingredients = [];
     document.querySelectorAll('.ingredient-item').forEach(item => {
         const name = item.querySelector('.ingredient-name').value;
@@ -726,6 +904,7 @@ async function completeSaveDish(name, description, calories, protein, fat, carbs
     
     const dishData = {
         name,
+        category,
         description,
         calories,
         protein,
@@ -737,9 +916,12 @@ async function completeSaveDish(name, description, calories, protein, fat, carbs
     };
     
     if (editIndex !== -1) {
+        const oldName = dishes[editIndex].name;
         dishes[editIndex] = dishData;
+        
+        // Обновляем блюдо в плане на неделю
         Object.keys(weekPlan).forEach(key => {
-            if (weekPlan[key].name === name) {
+            if (weekPlan[key].name === oldName) {
                 weekPlan[key] = dishData;
             }
         });
@@ -770,7 +952,7 @@ function resetDishForm() {
     addStepField();
 }
 
-// Добавление поля ингредиента
+// Добавление поля ингредиента (ИСПРАВЛЕН БАГ)
 function addIngredientField(name = '', amount = '', unit = 'г') {
     const ingredientList = document.getElementById('ingredient-list');
     const ingredientItem = document.createElement('div');
@@ -836,7 +1018,7 @@ function updateWeekSummary() {
 
 // Обновление списка покупок
 async function updateShoppingList() {
-    const currentWeekKey = `week-${currentWeek}`;
+    const currentWeekKey = `week-${currentWeek}-${currentMonth}-${currentYear}`;
     const weekIngredients = {};
     
     Object.values(weekPlan).forEach(dish => {
@@ -914,7 +1096,7 @@ function updateStatistics() {
     
     const dayCalories = {};
     Object.entries(weekPlan).forEach(([key, dish]) => {
-        const day = key.split('-')[1];
+        const day = key.split('-')[3]; // Изменен индекс из-за нового формата ключа
         dayCalories[day] = (dayCalories[day] || 0) + dish.calories;
     });
     
@@ -934,7 +1116,9 @@ function updateStatistics() {
 
 // Обновление заголовка недели
 function updateWeekTitle() {
-    document.getElementById('week-title').textContent = `Неделя ${currentWeek}, 2023`;
+    document.getElementById('week-month').value = currentMonth;
+    document.getElementById('week-number').value = currentWeek;
+    document.getElementById('week-year').value = currentYear;
 }
 
 // Экспорт данных
@@ -943,6 +1127,10 @@ function exportData() {
         dishes,
         weekPlan,
         shoppingList,
+        categories,
+        currentWeek,
+        currentMonth,
+        currentYear,
         exportDate: new Date().toISOString()
     };
     
@@ -968,13 +1156,21 @@ function importData(event) {
             dishes = data.dishes || dishes;
             weekPlan = data.weekPlan || weekPlan;
             shoppingList = data.shoppingList || shoppingList;
+            categories = data.categories || categories;
+            currentWeek = data.currentWeek || currentWeek;
+            currentMonth = data.currentMonth || currentMonth;
+            currentYear = data.currentYear || currentYear;
             
             await saveToGist();
             
             renderWeekPlanner();
+            renderCategoryList();
             renderDishList();
+            renderCategoriesManagement();
+            updateCategorySelect();
             renderShoppingList();
             updateStatistics();
+            updateWeekTitle();
             
             alert('Данные успешно импортированы!');
         } catch (error) {
@@ -989,11 +1185,13 @@ function importData(event) {
 // ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
 
 function setupEventListeners() {
+    // Навигация по неделям
     document.getElementById('prev-week').addEventListener('click', function() {
         if (currentWeek > 1) {
             currentWeek--;
             updateWeekTitle();
             renderWeekPlanner();
+            saveToGist();
         }
     });
     
@@ -1001,8 +1199,26 @@ function setupEventListeners() {
         currentWeek++;
         updateWeekTitle();
         renderWeekPlanner();
+        saveToGist();
     });
     
+    // Обновление даты
+    document.getElementById('week-month').addEventListener('change', function() {
+        currentMonth = this.value;
+        saveToGist();
+    });
+    
+    document.getElementById('week-number').addEventListener('change', function() {
+        currentWeek = parseInt(this.value);
+        saveToGist();
+    });
+    
+    document.getElementById('week-year').addEventListener('change', function() {
+        currentYear = parseInt(this.value);
+        saveToGist();
+    });
+    
+    // Форма блюда
     document.getElementById('dish-form').addEventListener('submit', function(e) {
         e.preventDefault();
         saveDish();
@@ -1021,9 +1237,18 @@ function setupEventListeners() {
         }
     });
     
-    document.getElementById('add-ingredient').addEventListener('click', addIngredientField);
-    document.getElementById('add-step').addEventListener('click', addStepField);
+    document.getElementById('add-ingredient').addEventListener('click', function() {
+        addIngredientField();
+    });
     
+    document.getElementById('add-step').addEventListener('click', function() {
+        addStepField();
+    });
+    
+    // Категории
+    document.getElementById('add-category').addEventListener('click', addCategory);
+    
+    // Синхронизация
     document.getElementById('setup-sync').addEventListener('click', function() {
         document.getElementById('sync-config').style.display = 'block';
     });
@@ -1059,14 +1284,23 @@ function setupEventListeners() {
             dishes = [];
             weekPlan = {};
             shoppingList = {};
+            categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'];
+            currentWeek = 1;
+            currentMonth = 'Январь';
+            currentYear = 2023;
             updateSyncUI();
             renderWeekPlanner();
+            renderCategoryList();
             renderDishList();
+            renderCategoriesManagement();
+            updateCategorySelect();
             renderShoppingList();
             updateStatistics();
+            updateWeekTitle();
         }
     });
     
+    // Модальные окна
     document.querySelectorAll('.close-modal').forEach(button => {
         button.addEventListener('click', function() {
             document.querySelectorAll('.modal').forEach(modal => {
