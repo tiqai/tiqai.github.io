@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Планировщик питания</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Планировщик питания</h1>
+            <nav>
+                <ul>
+                    <li><a href="#" class="nav-link active" data-section="week-plan">План на неделю</a></li>
+                    <li><a href="#" class="nav-link" data-section="dishes">Мои блюда</a></li>
+                    <li><a href="#" class="nav-link" data-section="add-dish">Добавить блюдо</a></li>
+                    <li><a href="#" class="nav-link" data-section="shopping-list">Список покупок</a></li>
+                    <li><a href="#" class="nav-link" data-section="statistics">Статистика</a></li>
+                    <li><a href="#" class="nav-link" data-section="sync">Синхронизация</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- План на неделю -->
+        <section id="week-plan" class="section active">
+            <div class="week-navigation">
+                <button class="btn btn-secondary" id="prev-week">← Предыдущая неделя</button>
+                <div class="week-title" id="week-title">Неделя 1, 2023</div>
+                <button class="btn btn-secondary" id="next-week">Следующая неделя →</button>
+            </div>
+            
+            <div class="week-planner" id="week-planner">
+                <!-- Динамически заполняется через JavaScript -->
+            </div>
+            
+            <div class="nutrition-summary">
+                <h3>Питание за неделю</h3>
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-label">Калории</div>
+                        <div class="stat-value" id="weekly-calories">0</div>
+                        <div class="stat-label">ккал</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Белки</div>
+                        <div class="stat-value" id="weekly-protein">0</div>
+                        <div class="stat-label">г</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Жиры</div>
+                        <div class="stat-value" id="weekly-fat">0</div>
+                        <div class="stat-label">г</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Углеводы</div>
+                        <div class="stat-value" id="weekly-carbs">0</div>
+                        <div class="stat-label">г</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Мои блюда -->
+        <section id="dishes" class="section">
+            <h2>Мои блюда</h2>
+            <div class="dish-list" id="dish-list">
+                <!-- Динамически заполняется через JavaScript -->
+            </div>
+        </section>
+
+        <!-- Добавить блюдо -->
+        <section id="add-dish" class="section">
+            <h2 id="dish-form-title">Добавить новое блюдо</h2>
+            <form id="dish-form">
+                <input type="hidden" id="edit-dish-index" value="-1">
+                
+                <div class="form-group">
+                    <label for="dish-name">Название блюда</label>
+                    <input type="text" id="dish-name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dish-description">Описание блюда</label>
+                    <textarea id="dish-description"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dish-image">Фотография блюда</label>
+                    <div class="image-upload">
+                        <input type="file" id="dish-image" accept="image/*">
+                        <div class="image-preview" id="image-preview">Превью изображения</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Пищевая ценность (на 100г)</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label for="dish-calories">Калории (ккал)</label>
+                            <input type="number" id="dish-calories" min="0" required>
+                        </div>
+                        <div>
+                            <label for="dish-protein">Белки (г)</label>
+                            <input type="number" id="dish-protein" min="0" step="0.1" required>
+                        </div>
+                        <div>
+                            <label for="dish-fat">Жиры (г)</label>
+                            <input type="number" id="dish-fat" min="0" step="0.1" required>
+                        </div>
+                        <div>
+                            <label for="dish-carbs">Углеводы (г)</label>
+                            <input type="number" id="dish-carbs" min="0" step="0.1" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Ингредиенты</label>
+                    <div class="ingredient-list" id="ingredient-list">
+                        <div class="ingredient-item">
+                            <input type="text" placeholder="Название ингредиента" class="ingredient-name">
+                            <input type="text" placeholder="Количество" class="ingredient-amount">
+                            <select class="ingredient-unit">
+                                <option value="г">г</option>
+                                <option value="кг">кг</option>
+                                <option value="мл">мл</option>
+                                <option value="л">л</option>
+                                <option value="шт">шт</option>
+                                <option value="ч.л.">ч.л.</option>
+                                <option value="ст.л.">ст.л.</option>
+                                <option value="щепотка">щепотка</option>
+                                <option value="по вкусу">по вкусу</option>
+                            </select>
+                            <button type="button" class="btn btn-danger btn-small remove-ingredient">×</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="add-ingredient">+ Добавить ингредиент</button>
+                </div>
+                
+                <div class="form-group">
+                    <label>Шаги приготовления</label>
+                    <div class="step-list" id="step-list">
+                        <div class="step-item">
+                            <input type="text" placeholder="Описание шага" class="step-description">
+                            <button type="button" class="btn btn-danger btn-small remove-step">×</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="add-step">+ Добавить шаг</button>
+                </div>
+                
+                <button type="submit" class="btn" id="save-dish-btn">Сохранить блюдо</button>
+                <button type="button" class="btn btn-secondary" id="cancel-edit" style="display: none; margin-left: 10px;">Отмена</button>
+            </form>
+        </section>
+
+        <!-- Список покупок -->
+        <section id="shopping-list" class="section">
+            <h2>Список покупок на неделю</h2>
+            <p>Все необходимые ингредиенты для выбранных блюд на текущую неделю:</p>
+            <div class="shopping-list-container" id="shopping-list-container">
+                <!-- Динамически заполняется через JavaScript -->
+            </div>
+        </section>
+
+        <!-- Статистика -->
+        <section id="statistics" class="section">
+            <h2>Статистика питания</h2>
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-label">Средние калории в день</div>
+                    <div class="stat-value" id="avg-calories">0</div>
+                    <div class="stat-label">ккал</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Самый калорийный день</div>
+                    <div class="stat-value" id="max-calories-day">Понедельник</div>
+                    <div class="stat-label" id="max-calories-value">0 ккал</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Любимое блюдо</div>
+                    <div class="stat-value" id="favorite-dish">-</div>
+                    <div class="stat-label">по частоте</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Всего блюд в базе</div>
+                    <div class="stat-value" id="total-dishes">0</div>
+                    <div class="stat-label">блюд</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <h3>Распределение БЖУ за неделю</h3>
+                <div id="nutrition-chart" style="height: 300px; margin-top: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; background-color: var(--light-color); border-radius: var(--border-radius);">
+                        <p>Диаграмма распределения белков, жиров и углеводов</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Синхронизация -->
+        <section id="sync" class="section">
+            <h2>Синхронизация с GitHub</h2>
+            
+            <div class="sync-section">
+                <div class="sync-status">
+                    <div class="status-indicator" id="sync-status"></div>
+                    <span id="sync-message">Настройте синхронизацию для доступа с телефона</span>
+                </div>
+                
+                <div class="sync-controls">
+                    <button class="btn" id="setup-sync">Настроить синхронизацию</button>
+                    <button class="btn btn-secondary" id="manual-sync">Синхронизировать сейчас</button>
+                    <button class="btn btn-secondary" id="export-data">Экспорт данных</button>
+                    <button class="btn btn-secondary" id="import-data">Импорт данных</button>
+                </div>
+            </div>
+
+            <div id="sync-config" style="display: none;">
+                <h3>Настройка GitHub Gist</h3>
+                <div class="form-group">
+                    <label for="github-token">GitHub Personal Access Token</label>
+                    <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                    <small>Создайте токен на GitHub: Settings → Developer settings → Personal access tokens → Tokens (classic)</small>
+                </div>
+                <div class="form-group">
+                    <label for="gist-id">Gist ID (оставьте пустым для создания нового)</label>
+                    <input type="text" id="gist-id" placeholder="xxxxxxxxxxxxxxxxxxxxxxxx">
+                    <small>Если у вас уже есть Gist с данными, укажите его ID</small>
+                </div>
+                <button class="btn" id="save-sync-config">Сохранить настройки</button>
+            </div>
+
+            <div id="sync-info" style="display: none; margin-top: 20px;">
+                <h3>Информация о синхронизации</h3>
+                <p><strong>Gist ID:</strong> <span id="current-gist-id"></span></p>
+                <p><strong>Последняя синхронизация:</strong> <span id="last-sync"></span></p>
+                <button class="btn btn-danger" id="disable-sync">Отключить синхронизацию</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Модальные окна -->
+    <div class="modal" id="dish-select-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Выберите блюдо</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="dish-list" id="modal-dish-list">
+                <!-- Динамически заполняется через JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="recipe-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="recipe-dish-name">Название блюда</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="recipe-content" id="recipe-content">
+                <!-- Динамически заполняется через JavaScript -->
+            </div>
+            <div class="recipe-actions" id="recipe-actions">
+                <!-- Кнопки редактирования и удаления -->
+            </div>
+        </div>
+    </div>
+
+    <div class="modal confirmation-modal" id="confirmation-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Подтверждение удаления</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <p id="confirmation-message">Вы уверены, что хотите удалить этот рецепт?</p>
+            <div class="confirmation-buttons">
+                <button class="btn btn-danger" id="confirm-delete">Удалить</button>
+                <button class="btn btn-secondary" id="cancel-delete">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
