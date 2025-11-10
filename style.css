@@ -98,7 +98,7 @@ h2 {
 .week-planner {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 20px;
+    gap: 15px;
     margin-bottom: 30px;
 }
 
@@ -116,80 +116,21 @@ h2 {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.day-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #ddd;
-}
-
-.day-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--dark-color);
-    margin: 0;
-}
-
-.day-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.meals-count {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--dark-color);
-    min-width: 20px;
+.day-card h3 {
     text-align: center;
-}
-
-.control-btn {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: bold;
-    transition: var(--transition);
-}
-
-.control-btn:hover {
-    background-color: var(--secondary-color);
-    transform: scale(1.1);
-}
-
-.control-btn:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.meals-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    margin-bottom: 10px;
+    color: var(--dark-color);
 }
 
 .meal-slot {
     background-color: white;
     border-radius: var(--border-radius);
-    padding: 12px;
+    padding: 10px;
+    margin-bottom: 10px;
     cursor: pointer;
     transition: var(--transition);
     position: relative;
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    padding-left: 35px;
 }
 
 .meal-slot:hover {
@@ -206,34 +147,27 @@ h2 {
 
 .meal-number {
     position: absolute;
-    left: 8px;
-    top: 8px;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
     background-color: var(--primary-color);
     color: white;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     font-weight: bold;
-    z-index: 2;
-}
-
-.meal-content {
-    margin-left: 0;
-    padding-left: 0;
 }
 
 .dish-image {
     width: 100%;
-    height: 80px;
+    height: 120px;
     object-fit: cover;
     border-radius: var(--border-radius);
-    margin-bottom: 8px;
-    position: relative;
-    z-index: 1;
+    margin-bottom: 10px;
 }
 
 .dish-list {
@@ -538,6 +472,24 @@ textarea {
     font-weight: 600;
     color: var(--dark-color);
     margin: 0;
+}
+
+.week-controls {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.meals-config {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.meals-input {
+    width: 70px;
+    text-align: center;
 }
 
 /* Стили для поиска */
@@ -908,14 +860,15 @@ textarea {
         align-items: flex-start;
     }
     
-    .day-header {
+    .week-controls {
         flex-direction: column;
         align-items: flex-start;
-        gap: 10px;
+        width: 100%;
     }
     
-    .day-controls {
-        align-self: flex-end;
+    .meals-config {
+        width: 100%;
+        justify-content: space-between;
     }
     
     .category-input-group {
