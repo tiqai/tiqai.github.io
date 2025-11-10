@@ -1187,6 +1187,18 @@
             }
         }
 
+// Проверка необходимости синхронизации
+function checkSyncNeeded() {
+    if (!syncConfig.lastSync) return true;
+    
+    const lastSync = new Date(syncConfig.lastSync).getTime();
+    const now = new Date().getTime();
+    const diffMinutes = (now - lastSync) / (1000 * 60);
+    
+    // Если прошло больше 5 минут - предлагаем синхронизацию
+    return diffMinutes > 5;
+}
+        
        // Загрузка данных из Gist с принудительным обновлением
 async function loadFromGist() {
     if (!syncConfig.token || !syncConfig.gistId || isSyncing) return;
@@ -1296,6 +1308,12 @@ async function forceSync() {
                 infoSection.style.display = 'none';
                 updateSyncStatus('error', 'Синхронизация не настроена');
             }
+
+            if (syncConfig.token && checkSyncNeeded()) {
+    document.getElementById('sync-message').innerHTML = 
+        'Данные могут быть устаревшими. <strong>Нажмите "Синхронизировать сейчас"</strong>';
+    document.getElementById('sync-status').classList.add('pending');
+}
         }
 
         // Функции сохранения с синхронизацией
