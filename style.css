@@ -97,18 +97,17 @@ h2 {
 
 .week-planner {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
     margin-bottom: 30px;
 }
 
 .day-card {
     background-color: var(--light-color);
     border-radius: var(--border-radius);
-    padding: 15px;
+    padding: 20px;
     box-shadow: var(--shadow);
     transition: var(--transition);
-    position: relative;
 }
 
 .day-card:hover {
@@ -118,42 +117,60 @@ h2 {
 
 .day-card h3 {
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     color: var(--dark-color);
+    font-size: 1.3rem;
 }
 
-/* Новые стили для управления приемами пищи по дням */
+/* Стили для управления приемами пищи */
 .meals-control {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 15px;
-    padding: 8px;
-    background-color: rgba(255, 255, 255, 0.7);
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background-color: rgba(255, 255, 255, 0.9);
     border-radius: var(--border-radius);
+    border: 1px solid #e0e0e0;
+}
+
+.meals-control span {
+    font-weight: 500;
+    color: var(--dark-color);
 }
 
 .meals-btn {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
+    font-size: 1.1rem;
+    border: 2px solid var(--primary-color);
+    background-color: white;
+    color: var(--primary-color);
+}
+
+.meals-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
 }
 
 .meals-count {
     font-weight: bold;
-    min-width: 20px;
+    font-size: 1.2rem;
+    min-width: 25px;
     text-align: center;
+    color: var(--dark-color);
 }
 
 .meals-container {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .meal-slot {
@@ -165,12 +182,14 @@ h2 {
     transition: var(--transition);
     position: relative;
     overflow: hidden;
-    min-height: 80px;
+    min-height: 90px;
+    border: 2px solid transparent;
 }
 
 .meal-slot:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    border-color: var(--accent-color);
 }
 
 .meal-slot.empty {
@@ -184,47 +203,54 @@ h2 {
     justify-content: center;
     height: 100%;
     font-style: italic;
+    padding: 20px;
 }
 
 .meal-number {
     position: absolute;
-    left: 8px;
-    top: 8px;
+    left: 10px;
+    top: 10px;
     background-color: var(--primary-color);
     color: white;
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: bold;
     z-index: 2;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .meal-content {
-    padding: 15px;
-    padding-top: 35px; /* Оставляем место для номера */
+    padding: 20px;
+    padding-top: 40px;
 }
 
 .meal-name {
-    font-weight: 500;
-    margin-bottom: 5px;
+    font-weight: 600;
+    margin-bottom: 8px;
     color: var(--dark-color);
+    font-size: 1.1rem;
 }
 
 .dish-image {
     width: 100%;
-    height: 120px;
+    height: 140px;
     object-fit: cover;
     border-radius: var(--border-radius) var(--border-radius) 0 0;
 }
 
+.view-recipe-btn {
+    margin-top: 10px !important;
+    width: 100% !important;
+}
+
 .dish-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
     margin-top: 20px;
 }
@@ -232,7 +258,7 @@ h2 {
 .dish-card {
     background-color: white;
     border-radius: var(--border-radius);
-    padding: 15px;
+    padding: 20px;
     box-shadow: var(--shadow);
     transition: var(--transition);
     cursor: pointer;
@@ -246,26 +272,30 @@ h2 {
 
 .dish-card h3 {
     color: var(--dark-color);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    font-size: 1.2rem;
 }
 
 .dish-category-badge {
     display: inline-block;
     background-color: var(--light-color);
     color: var(--dark-color);
-    padding: 2px 8px;
+    padding: 4px 10px;
     border-radius: 12px;
     font-size: 0.8rem;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     margin-right: 5px;
+    border: 1px solid var(--accent-color);
 }
 
 .nutrition-info {
     display: flex;
     justify-content: space-between;
-    margin-top: 10px;
+    margin-top: 12px;
     font-size: 0.9rem;
     color: #666;
+    flex-wrap: wrap;
+    gap: 5px;
 }
 
 .nutrition-value {
@@ -281,11 +311,12 @@ label {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
+    color: var(--dark-color);
 }
 
 input, textarea, select {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid #ddd;
     border-radius: var(--border-radius);
     font-size: 1rem;
@@ -311,7 +342,7 @@ textarea {
     display: flex;
     align-items: center;
     margin-bottom: 10px;
-    padding: 10px;
+    padding: 12px;
     background-color: var(--light-color);
     border-radius: var(--border-radius);
     gap: 10px;
@@ -338,7 +369,7 @@ textarea {
     background-color: var(--primary-color);
     color: white;
     border: none;
-    padding: 10px 15px;
+    padding: 12px 20px;
     border-radius: var(--border-radius);
     cursor: pointer;
     font-weight: 500;
@@ -346,6 +377,7 @@ textarea {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    font-size: 1rem;
 }
 
 .btn:hover {
@@ -370,7 +402,7 @@ textarea {
 }
 
 .btn-small {
-    padding: 5px 10px;
+    padding: 8px 12px;
     font-size: 0.9rem;
 }
 
@@ -382,6 +414,7 @@ textarea {
     display: flex;
     align-items: center;
     gap: 15px;
+    flex-wrap: wrap;
 }
 
 .image-preview {
@@ -396,6 +429,7 @@ textarea {
     color: #999;
     font-size: 0.9rem;
     text-align: center;
+    background-color: #f9f9f9;
 }
 
 .image-preview img {
@@ -492,6 +526,7 @@ textarea {
     text-align: center;
     box-shadow: var(--shadow);
     transition: var(--transition);
+    border-top: 4px solid var(--primary-color);
 }
 
 .stat-card:hover {
@@ -549,7 +584,7 @@ textarea {
 }
 
 .search-input {
-    padding: 10px 15px;
+    padding: 12px 15px;
     border: 1px solid #ddd;
     border-radius: var(--border-radius);
     font-size: 1rem;
@@ -568,7 +603,7 @@ textarea {
 }
 
 .category-filter select {
-    padding: 10px;
+    padding: 12px;
 }
 
 /* Стили для категорий */
@@ -586,21 +621,24 @@ textarea {
 }
 
 .category-item {
-    padding: 10px 15px;
+    padding: 12px 15px;
     margin-bottom: 5px;
     border-radius: var(--border-radius);
     cursor: pointer;
     transition: var(--transition);
+    border-left: 3px solid transparent;
 }
 
 .category-item:hover {
     background-color: rgba(76, 175, 80, 0.1);
+    border-left-color: var(--accent-color);
 }
 
 .category-item.active {
     background-color: var(--primary-color);
     color: white;
     font-weight: 500;
+    border-left-color: var(--dark-color);
 }
 
 .category-item.all-dishes {
@@ -637,6 +675,7 @@ textarea {
     background-color: var(--light-color);
     border-radius: var(--border-radius);
     transition: var(--transition);
+    border-left: 3px solid var(--accent-color);
 }
 
 .category-item-management:hover {
@@ -677,6 +716,7 @@ textarea {
 
 .category-checkbox-label:hover {
     background-color: #e8f5e8;
+    border-color: var(--accent-color);
 }
 
 .category-checkbox:checked + .category-checkbox-label {
@@ -711,6 +751,7 @@ textarea {
 .shopping-item.checked {
     text-decoration: line-through;
     color: #999;
+    background-color: #f9f9f9;
 }
 
 .shopping-item-info {
@@ -913,16 +954,16 @@ textarea {
     }
     
     .meal-slot {
-        min-height: 70px;
+        min-height: 80px;
     }
     
     .meal-content {
-        padding: 12px;
-        padding-top: 30px;
+        padding: 15px;
+        padding-top: 35px;
     }
     
     .dish-image {
-        height: 100px;
+        height: 120px;
     }
     
     .category-input-group {
@@ -960,5 +1001,14 @@ textarea {
     
     .category-filter, .search-container {
         width: 100%;
+    }
+    
+    nav ul {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    nav li {
+        margin: 3px 0;
     }
 }

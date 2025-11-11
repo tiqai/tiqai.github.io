@@ -2,7 +2,7 @@
 let dishes = [];
 let weekPlan = {};
 let shoppingList = {};
-let categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты']; // Стандартные категории
+let categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'];
 let currentCategory = 'all';
 let mealsPerDay = {
     'Понедельник': 3,
