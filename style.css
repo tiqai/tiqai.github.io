@@ -122,52 +122,104 @@ h2 {
     color: var(--dark-color);
 }
 
+/* Новые стили для управления приемами пищи по дням */
+.meals-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 8px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: var(--border-radius);
+}
+
+.meals-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.meals-count {
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+}
+
+.meals-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
 .meal-slot {
     background-color: white;
     border-radius: var(--border-radius);
-    padding: 10px;
-    margin-bottom: 10px;
+    padding: 0;
+    margin-bottom: 0;
     cursor: pointer;
     transition: var(--transition);
     position: relative;
-    padding-left: 35px;
+    overflow: hidden;
+    min-height: 80px;
 }
 
 .meal-slot:hover {
-    background-color: var(--accent-color);
-    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .meal-slot.empty {
-    background-color: #e0e0e0;
+    background-color: #f9f9f9;
     color: #9e9e9e;
-    text-align: center;
+}
+
+.meal-slot.empty .meal-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
     font-style: italic;
 }
 
 .meal-number {
     position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
+    left: 8px;
+    top: 8px;
     background-color: var(--primary-color);
     color: white;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.8rem;
     font-weight: bold;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.meal-content {
+    padding: 15px;
+    padding-top: 35px; /* Оставляем место для номера */
+}
+
+.meal-name {
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: var(--dark-color);
 }
 
 .dish-image {
     width: 100%;
     height: 120px;
     object-fit: cover;
-    border-radius: var(--border-radius);
-    margin-bottom: 10px;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
 }
 
 .dish-list {
@@ -479,17 +531,6 @@ textarea {
     gap: 20px;
     align-items: center;
     flex-wrap: wrap;
-}
-
-.meals-config {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.meals-input {
-    width: 70px;
-    text-align: center;
 }
 
 /* Стили для поиска */
@@ -804,6 +845,7 @@ textarea {
     flex-wrap: wrap;
 }
 
+/* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
     .week-planner {
         grid-template-columns: 1fr;
@@ -866,9 +908,21 @@ textarea {
         width: 100%;
     }
     
-    .meals-config {
-        width: 100%;
-        justify-content: space-between;
+    .meals-control {
+        flex-wrap: wrap;
+    }
+    
+    .meal-slot {
+        min-height: 70px;
+    }
+    
+    .meal-content {
+        padding: 12px;
+        padding-top: 30px;
+    }
+    
+    .dish-image {
+        height: 100px;
     }
     
     .category-input-group {
