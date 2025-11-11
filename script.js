@@ -2,7 +2,7 @@
 let dishes = [];
 let weekPlan = {};
 let shoppingList = {};
-let categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'];
+let categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты']; // Стандартные категории
 let currentCategory = 'all';
 let mealsPerDay = {
     'Понедельник': 3,
@@ -492,42 +492,13 @@ function renderWeekPlanner() {
         dayTitle.textContent = day;
         dayCard.appendChild(dayTitle);
         
-        // Контролы для настройки количества приемов пищи
-        const mealsControl = document.createElement('div');
-        mealsControl.className = 'meals-control';
-        
-        const mealsLabel = document.createElement('span');
-        mealsLabel.textContent = 'Приемов пищи:';
-        mealsControl.appendChild(mealsLabel);
-        
-        const minusBtn = document.createElement('button');
-        minusBtn.className = 'btn btn-small meals-btn';
-        minusBtn.textContent = '-';
-        minusBtn.addEventListener('click', function() {
-            decreaseMealsPerDay(day);
-        });
-        mealsControl.appendChild(minusBtn);
-        
-        const mealsCount = document.createElement('span');
-        mealsCount.className = 'meals-count';
-        mealsCount.textContent = mealsPerDay[day];
-        mealsControl.appendChild(mealsCount);
-        
-        const plusBtn = document.createElement('button');
-        plusBtn.className = 'btn btn-small meals-btn';
-        plusBtn.textContent = '+';
-        plusBtn.addEventListener('click', function() {
-            increaseMealsPerDay(day);
-        });
-        mealsControl.appendChild(plusBtn);
-        
-        dayCard.appendChild(mealsControl);
+        // Контейнер для слотов приемов пищи
+        const mealSlotsContainer = document.createElement('div');
+        mealSlotsContainer.className = 'meal-slots-container';
         
         // Создаем слоты для приемов пищи
-        const mealsContainer = document.createElement('div');
-        mealsContainer.className = 'meals-container';
-        
-        for (let i = 1; i <= mealsPerDay[day]; i++) {
+        const dayMealsCount = mealsPerDay[day] || 3;
+        for (let i = 1; i <= dayMealsCount; i++) {
             const mealSlot = document.createElement('div');
             mealSlot.className = 'meal-slot';
             mealSlot.setAttribute('data-day', day);
@@ -536,7 +507,7 @@ function renderWeekPlanner() {
             const mealKey = `${day}-${i}`;
             const dish = weekPlan[mealKey];
             
-            // Добавляем номер приема пищи (поверх картинки)
+            // Добавляем номер приема пищи (поверх картинки в левом верхнем углу)
             const mealNumber = document.createElement('div');
             mealNumber.className = 'meal-number';
             mealNumber.textContent = i;
@@ -550,13 +521,11 @@ function renderWeekPlanner() {
                 
                 mealSlot.innerHTML += `
                     ${imageHtml}
-                    <div class="meal-content">
-                        <div class="meal-name">${dish.name}</div>
-                        <div class="nutrition-info">
-                            <span>${dish.calories} ккал</span>
-                        </div>
-                        <button class="btn btn-small view-recipe-btn">Рецепт</button>
+                    <div>${dish.name}</div>
+                    <div class="nutrition-info">
+                        <span>${dish.calories} ккал</span>
                     </div>
+                    <button class="btn btn-small view-recipe-btn" style="margin-top: 5px; width: 100%;">Рецепт</button>
                 `;
                 
                 mealSlot.querySelector('.view-recipe-btn').addEventListener('click', function(e) {
@@ -568,11 +537,7 @@ function renderWeekPlanner() {
                 });
             } else {
                 mealSlot.className += ' empty';
-                mealSlot.innerHTML += `
-                    <div class="meal-content">
-                        Добавить блюдо
-                    </div>
-                `;
+                mealSlot.innerHTML += 'Добавить блюдо';
             }
             
             mealSlot.addEventListener('click', function() {
@@ -583,10 +548,40 @@ function renderWeekPlanner() {
                 openDishSelectModal();
             });
             
-            mealsContainer.appendChild(mealSlot);
+            mealSlotsContainer.appendChild(mealSlot);
         }
         
-        dayCard.appendChild(mealsContainer);
+        dayCard.appendChild(mealSlotsContainer);
+        
+        // Добавляем кнопки управления количеством приемов пищи
+        const mealsControls = document.createElement('div');
+        mealsControls.className = 'day-meals-controls';
+        
+        const minusBtn = document.createElement('button');
+        minusBtn.className = 'btn btn-small btn-danger';
+        minusBtn.textContent = '-';
+        minusBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            changeDayMealsCount(day, -1);
+        });
+        
+        const mealsCount = document.createElement('span');
+        mealsCount.className = 'meals-count';
+        mealsCount.textContent = dayMealsCount;
+        
+        const plusBtn = document.createElement('button');
+        plusBtn.className = 'btn btn-small';
+        plusBtn.textContent = '+';
+        plusBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            changeDayMealsCount(day, 1);
+        });
+        
+        mealsControls.appendChild(minusBtn);
+        mealsControls.appendChild(mealsCount);
+        mealsControls.appendChild(plusBtn);
+        
+        dayCard.appendChild(mealsControls);
         weekPlanner.appendChild(dayCard);
     });
     
@@ -594,30 +589,25 @@ function renderWeekPlanner() {
     updateShoppingList();
 }
 
-// Увеличение количества приемов пищи для дня
-async function increaseMealsPerDay(day) {
-    if (mealsPerDay[day] < 10) {
-        mealsPerDay[day]++;
-        await saveToGist();
-        renderWeekPlanner();
+// Изменение количества приемов пищи для дня
+async function changeDayMealsCount(day, change) {
+    const currentCount = mealsPerDay[day] || 3;
+    const newCount = currentCount + change;
+    
+    if (newCount < 1 || newCount > 10) {
+        return;
     }
-}
-
-// Уменьшение количества приемов пищи для дня
-async function decreaseMealsPerDay(day) {
-    if (mealsPerDay[day] > 1) {
-        // Удаляем блюда из удаляемых слотов
-        for (let i = mealsPerDay[day]; i > mealsPerDay[day] - 1; i--) {
-            const mealKey = `${day}-${i}`;
-            if (weekPlan[mealKey]) {
-                delete weekPlan[mealKey];
-            }
-        }
-        
-        mealsPerDay[day]--;
-        await saveToGist();
-        renderWeekPlanner();
+    
+    mealsPerDay[day] = newCount;
+    
+    // Удаляем блюда, которые выходят за пределы нового количества приемов пищи
+    for (let i = newCount + 1; i <= currentCount; i++) {
+        const mealKey = `${day}-${i}`;
+        delete weekPlan[mealKey];
     }
+    
+    await saveToGist();
+    renderWeekPlanner();
 }
 
 // Рендеринг списка блюд с фильтрацией по категориям и поиском
