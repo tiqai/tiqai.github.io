@@ -601,10 +601,12 @@ async function changeDayMealsCount(day, change) {
     mealsPerDay[day] = newCount;
     
     // Удаляем блюда, которые выходят за пределы нового количества приемов пищи
-    for (let i = newCount + 1; i <= currentCount; i++) {
-        const mealKey = `${day}-${i}`;
-        delete weekPlan[mealKey];
-    }
+    Object.keys(weekPlan).forEach(mealKey => {
+        const [mealDay, mealNumber] = mealKey.split('-');
+        if (mealDay === day && parseInt(mealNumber) > newCount) {
+            delete weekPlan[mealKey];
+        }
+    });
     
     await saveToGist();
     renderWeekPlanner();
@@ -906,6 +908,7 @@ function renderModalDishList() {
         
         dishCard.addEventListener('click', function() {
             assignDishToSlot(index);
+            const modal = document.getElementById('dish-select-modal');
             modal.classList.remove('active');
         });
         
