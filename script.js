@@ -2,7 +2,7 @@
 let dishes = [];
 let weekPlan = {};
 let shoppingList = {};
-let categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты']; // Стандартные категории
+let categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'];
 let currentCategory = 'all';
 let mealsPerDay = {
     'Понедельник': 3,
@@ -113,21 +113,21 @@ async function loadFromGist() {
             
             if (file && file.content) {
                 const serverData = JSON.parse(file.content);
+                console.log('Данные загружены с сервера:', serverData);
                 
-                // Полностью заменяем данные на серверные
+                // Аккуратно обновляем данные, сохраняя текущие изменения
                 dishes = serverData.dishes || [];
                 weekPlan = serverData.weekPlan || {};
                 shoppingList = serverData.shoppingList || {};
                 categories = serverData.categories || categories;
-                mealsPerDay = serverData.mealsPerDay || {
-                    'Понедельник': 3,
-                    'Вторник': 3,
-                    'Среда': 3,
-                    'Четверг': 3,
-                    'Пятница': 3,
-                    'Суббота': 3,
-                    'Воскресенье': 3
-                };
+                
+                // Важно: обновляем mealsPerDay только если он есть в серверных данных
+                // и не перезаписываем текущие локальные изменения
+                if (serverData.mealsPerDay) {
+                    // Сохраняем текущие значения для дней, которых нет в серверных данных
+                    const currentMealsPerDay = {...mealsPerDay};
+                    mealsPerDay = {...currentMealsPerDay, ...serverData.mealsPerDay};
+                }
                 
                 // Обновляем интерфейс
                 renderWeekPlanner();
@@ -139,7 +139,7 @@ async function loadFromGist() {
                 updateWeekSummary();
                 
                 updateSyncStatus('synced', 'Данные загружены');
-                console.log('✅ Данные загружены с сервера');
+                console.log('✅ Данные загружены с сервера', mealsPerDay);
             } else {
                 // Файл не найден, создаем пустые данные
                 await saveToGist();
@@ -184,10 +184,12 @@ async function saveToGist() {
             weekPlan,
             shoppingList,
             categories,
-            mealsPerDay,
+            mealsPerDay, // Сохраняем актуальные данные
             lastSync: new Date().toISOString(),
             version: '1.0'
         };
+
+        console.log('Сохранение данных:', data);
 
         const gistData = {
             files: {
@@ -239,7 +241,7 @@ async function saveToGist() {
             
             updateSyncStatus('synced', 'Данные сохранены');
             updateSyncUI();
-            console.log('✅ Данные сохранены на сервер');
+            console.log('✅ Данные сохранены на сервер', mealsPerDay);
         } else {
             const errorText = await response.text();
             throw new Error(`Ошибка сохранения: ${response.status} - ${errorText}`);
@@ -589,11 +591,11 @@ function renderWeekPlanner() {
         const minusBtn = document.createElement('button');
         minusBtn.className = 'btn btn-small btn-danger';
         minusBtn.textContent = '-';
-        minusBtn.type = 'button'; // Явно указываем тип кнопки
+        minusBtn.type = 'button';
         minusBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Минус нажат для дня:', day);
+            console.log('Минус нажат для дня:', day, 'текущее значение:', mealsPerDay[day]);
             changeDayMealsCount(day, -1);
         });
         
@@ -604,11 +606,11 @@ function renderWeekPlanner() {
         const plusBtn = document.createElement('button');
         plusBtn.className = 'btn btn-small';
         plusBtn.textContent = '+';
-        plusBtn.type = 'button'; // Явно указываем тип кнопки
+        plusBtn.type = 'button';
         plusBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Плюс нажат для дня:', day);
+            console.log('Плюс нажат для дня:', day, 'текущее значение:', mealsPerDay[day]);
             changeDayMealsCount(day, 1);
         });
         
@@ -626,7 +628,7 @@ function renderWeekPlanner() {
 
 // Изменение количества приемов пищи для дня
 async function changeDayMealsCount(day, change) {
-    console.log(`Изменение количества приемов пищи для ${day}: ${change}`);
+    console.log(`Изменение количества приемов пищи для ${day}: ${change}, текущее: ${mealsPerDay[day]}`);
     
     const currentCount = mealsPerDay[day] || 3;
     const newCount = currentCount + change;
@@ -636,6 +638,7 @@ async function changeDayMealsCount(day, change) {
         return;
     }
     
+    // Обновляем данные
     mealsPerDay[day] = newCount;
     
     // Удаляем блюда, которые выходят за пределы нового количества приемов пищи
@@ -647,9 +650,13 @@ async function changeDayMealsCount(day, change) {
     });
     
     try {
-        await saveToGist();
+        // Сначала обновляем интерфейс
         renderWeekPlanner();
-        console.log(`Количество приемов пищи для ${day} изменено на ${newCount}`);
+        console.log(`Интерфейс обновлен, новое количество для ${day}: ${newCount}`);
+        
+        // Затем сохраняем на сервер
+        await saveToGist();
+        console.log(`Количество приемов пищи для ${day} изменено на ${newCount} и сохранено`);
     } catch (error) {
         console.error('Ошибка при изменении количества приемов пищи:', error);
     }
@@ -784,73 +791,7 @@ function renderShoppingList() {
             renderShoppingList();
         });
         
-        // Добавляем обработчики для перетаскивания
-        shoppingItem.addEventListener('dragstart', handleDragStart);
-        shoppingItem.addEventListener('dragover', handleDragOver);
-        shoppingItem.addEventListener('dragenter', handleDragEnter);
-        shoppingItem.addEventListener('dragleave', handleDragLeave);
-        shoppingItem.addEventListener('drop', handleDrop);
-        shoppingItem.addEventListener('dragend', handleDragEnd);
-        
         shoppingListContainer.appendChild(shoppingItem);
-    });
-}
-
-// Функции для перетаскивания элементов списка покупок
-let dragSrcEl = null;
-
-function handleDragStart(e) {
-    dragSrcEl = this;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', this.innerHTML);
-    this.classList.add('dragging');
-}
-
-function handleDragOver(e) {
-    if (e.preventDefault) {
-        e.preventDefault();
-    }
-    e.dataTransfer.dropEffect = 'move';
-    return false;
-}
-
-function handleDragEnter(e) {
-    this.classList.add('over');
-}
-
-function handleDragLeave(e) {
-    this.classList.remove('over');
-}
-
-function handleDrop(e) {
-    if (e.stopPropagation) {
-        e.stopPropagation();
-    }
-    
-    if (dragSrcEl !== this) {
-        const currentWeekKey = `current-week`;
-        const weekShoppingList = shoppingList[currentWeekKey] || [];
-        
-        const fromIndex = parseInt(dragSrcEl.getAttribute('data-index'));
-        const toIndex = parseInt(this.getAttribute('data-index'));
-        
-        // Перемещаем элемент в массиве
-        const [movedItem] = weekShoppingList.splice(fromIndex, 1);
-        weekShoppingList.splice(toIndex, 0, movedItem);
-        
-        // Сохраняем изменения
-        shoppingList[currentWeekKey] = weekShoppingList;
-        saveToGist();
-        renderShoppingList();
-    }
-    
-    return false;
-}
-
-function handleDragEnd(e) {
-    document.querySelectorAll('.shopping-item').forEach(item => {
-        item.classList.remove('over');
-        item.classList.remove('dragging');
     });
 }
 
