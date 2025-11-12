@@ -31,22 +31,28 @@ const measurementUnits = [
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
 
 document.addEventListener('DOMContentLoaded', function() {
-    initializeNavigation();
-    setupEventListeners();
-    updateSyncUI();
-    
-    // Загружаем данные с сервера при запуске
-    if (syncConfig.token && syncConfig.gistId) {
-        loadFromGist();
-    } else {
-        // Показываем пустой интерфейс
-        renderWeekPlanner();
-        renderCategoryList();
-        renderDishList();
-        renderCategoriesManagement();
-        updateCategoriesSelect();
-        renderShoppingList();
-        updateWeekSummary();
+    console.log('Инициализация приложения...');
+    try {
+        initializeNavigation();
+        setupEventListeners();
+        updateSyncUI();
+        
+        // Загружаем данные с сервера при запуске
+        if (syncConfig.token && syncConfig.gistId) {
+            loadFromGist();
+        } else {
+            // Показываем пустой интерфейс
+            renderWeekPlanner();
+            renderCategoryList();
+            renderDishList();
+            renderCategoriesManagement();
+            updateCategoriesSelect();
+            renderShoppingList();
+            updateWeekSummary();
+        }
+        console.log('Приложение успешно инициализировано');
+    } catch (error) {
+        console.error('Ошибка инициализации:', error);
     }
 });
 
@@ -96,7 +102,8 @@ async function loadFromGist() {
     try {
         const response = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
             headers: {
-                'Authorization': `token ${syncConfig.token}`
+                'Authorization': `token ${syncConfig.token}`,
+                'Accept': 'application/vnd.github.v3+json'
             }
         });
 
@@ -199,7 +206,8 @@ async function saveToGist() {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `token ${syncConfig.token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
                 },
                 body: JSON.stringify(gistData)
             });
@@ -209,7 +217,8 @@ async function saveToGist() {
                 method: 'POST',
                 headers: {
                     'Authorization': `token ${syncConfig.token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
                 },
                 body: JSON.stringify(gistData)
             });
@@ -260,16 +269,18 @@ function updateSyncStatus(status, message) {
     const statusElement = document.getElementById('sync-status');
     const messageElement = document.getElementById('sync-message');
     
-    statusElement.className = 'status-indicator';
-    if (status === 'synced') {
-        statusElement.classList.add('synced');
-    } else if (status === 'pending') {
-        statusElement.classList.add('pending');
-    } else if (status === 'error') {
-        statusElement.classList.add('error');
+    if (statusElement && messageElement) {
+        statusElement.className = 'status-indicator';
+        if (status === 'synced') {
+            statusElement.classList.add('synced');
+        } else if (status === 'pending') {
+            statusElement.classList.add('pending');
+        } else if (status === 'error') {
+            statusElement.classList.add('error');
+        }
+        
+        messageElement.textContent = message;
     }
-    
-    messageElement.textContent = message;
 }
 
 // Обновление UI синхронизации
@@ -277,20 +288,25 @@ function updateSyncUI() {
     const configSection = document.getElementById('sync-config');
     const infoSection = document.getElementById('sync-info');
     
-    if (syncConfig.token) {
-        configSection.style.display = 'none';
-        infoSection.style.display = 'block';
-        
-        document.getElementById('current-gist-id').textContent = syncConfig.gistId || 'Не создан';
-        document.getElementById('last-sync').textContent = 
-            syncConfig.lastSync ? new Date(syncConfig.lastSync).toLocaleString() : 'Никогда';
-        
-        updateSyncStatus(syncConfig.lastSync ? 'synced' : 'pending', 
-            syncConfig.lastSync ? 'Синхронизация настроена' : 'Настройте синхронизацию');
-    } else {
-        configSection.style.display = 'block';
-        infoSection.style.display = 'none';
-        updateSyncStatus('error', 'Синхронизация не настроена');
+    if (configSection && infoSection) {
+        if (syncConfig.token) {
+            configSection.style.display = 'none';
+            infoSection.style.display = 'block';
+            
+            const currentGistId = document.getElementById('current-gist-id');
+            const lastSync = document.getElementById('last-sync');
+            
+            if (currentGistId) currentGistId.textContent = syncConfig.gistId || 'Не создан';
+            if (lastSync) lastSync.textContent = 
+                syncConfig.lastSync ? new Date(syncConfig.lastSync).toLocaleString() : 'Никогда';
+            
+            updateSyncStatus(syncConfig.lastSync ? 'synced' : 'pending', 
+                syncConfig.lastSync ? 'Синхронизация настроена' : 'Настройте синхронизацию');
+        } else {
+            configSection.style.display = 'block';
+            infoSection.style.display = 'none';
+            updateSyncStatus('error', 'Синхронизация не настроена');
+        }
     }
 }
 
@@ -299,6 +315,8 @@ function updateSyncUI() {
 // Рендеринг списка категорий
 function renderCategoryList() {
     const categoryList = document.getElementById('category-list');
+    if (!categoryList) return;
+    
     categoryList.innerHTML = '';
     
     // Добавляем категорию "Все блюда"
@@ -331,6 +349,8 @@ function renderCategoryList() {
 // Рендеринг управления категориями
 function renderCategoriesManagement() {
     const categoryItems = document.getElementById('category-items');
+    if (!categoryItems) return;
+    
     categoryItems.innerHTML = '';
     
     const sortedCategories = [...categories].sort();
@@ -365,6 +385,8 @@ function renderCategoriesManagement() {
 // Обновление выбора категорий в форме
 function updateCategoriesSelect() {
     const categoriesSelect = document.getElementById('categories-select');
+    if (!categoriesSelect) return;
+    
     categoriesSelect.innerHTML = '';
     
     const sortedCategories = [...categories].sort();
@@ -385,6 +407,8 @@ function updateCategoriesSelect() {
 // Обновление фильтра категорий в модальном окне
 function updateModalCategoryFilter() {
     const categoryFilter = document.getElementById('modal-category-filter');
+    if (!categoryFilter) return;
+    
     categoryFilter.innerHTML = '<option value="all">Все категории</option>';
     
     const sortedCategories = [...categories].sort();
@@ -428,7 +452,10 @@ function setSelectedCategories(categoriesArray) {
 
 // Добавление новой категории
 async function addCategory() {
-    const categoryName = document.getElementById('new-category-name').value.trim();
+    const categoryNameInput = document.getElementById('new-category-name');
+    if (!categoryNameInput) return;
+    
+    const categoryName = categoryNameInput.value.trim();
     
     if (!categoryName) {
         alert('Введите название категории');
@@ -443,7 +470,7 @@ async function addCategory() {
     categories.push(categoryName);
     await saveToGist();
     
-    document.getElementById('new-category-name').value = '';
+    categoryNameInput.value = '';
     renderCategoriesManagement();
     updateCategoriesSelect();
     updateModalCategoryFilter();
@@ -480,6 +507,8 @@ async function deleteCategory(categoryName) {
 // Рендеринг планировщика на неделю
 function renderWeekPlanner() {
     const weekPlanner = document.getElementById('week-planner');
+    if (!weekPlanner) return;
+    
     weekPlanner.innerHTML = '';
     
     const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
@@ -560,8 +589,11 @@ function renderWeekPlanner() {
         const minusBtn = document.createElement('button');
         minusBtn.className = 'btn btn-small btn-danger';
         minusBtn.textContent = '-';
+        minusBtn.type = 'button'; // Явно указываем тип кнопки
         minusBtn.addEventListener('click', function(e) {
+            e.preventDefault();
             e.stopPropagation();
+            console.log('Минус нажат для дня:', day);
             changeDayMealsCount(day, -1);
         });
         
@@ -572,8 +604,11 @@ function renderWeekPlanner() {
         const plusBtn = document.createElement('button');
         plusBtn.className = 'btn btn-small';
         plusBtn.textContent = '+';
+        plusBtn.type = 'button'; // Явно указываем тип кнопки
         plusBtn.addEventListener('click', function(e) {
+            e.preventDefault();
             e.stopPropagation();
+            console.log('Плюс нажат для дня:', day);
             changeDayMealsCount(day, 1);
         });
         
@@ -591,10 +626,13 @@ function renderWeekPlanner() {
 
 // Изменение количества приемов пищи для дня
 async function changeDayMealsCount(day, change) {
+    console.log(`Изменение количества приемов пищи для ${day}: ${change}`);
+    
     const currentCount = mealsPerDay[day] || 3;
     const newCount = currentCount + change;
     
     if (newCount < 1 || newCount > 10) {
+        console.log('Недопустимое количество приемов пищи:', newCount);
         return;
     }
     
@@ -608,13 +646,20 @@ async function changeDayMealsCount(day, change) {
         }
     });
     
-    await saveToGist();
-    renderWeekPlanner();
+    try {
+        await saveToGist();
+        renderWeekPlanner();
+        console.log(`Количество приемов пищи для ${day} изменено на ${newCount}`);
+    } catch (error) {
+        console.error('Ошибка при изменении количества приемов пищи:', error);
+    }
 }
 
 // Рендеринг списка блюд с фильтрацией по категориям и поиском
 function renderDishList() {
     const dishList = document.getElementById('dish-list');
+    if (!dishList) return;
+    
     dishList.innerHTML = '';
     
     let filteredDishes = dishes;
@@ -704,6 +749,8 @@ function renderDishList() {
 // Рендеринг списка покупок
 function renderShoppingList() {
     const shoppingListContainer = document.getElementById('shopping-list-container');
+    if (!shoppingListContainer) return;
+    
     shoppingListContainer.innerHTML = '';
     
     const currentWeekKey = `current-week`;
@@ -832,13 +879,17 @@ async function clearWeek() {
 // Открытие модального окна выбора блюда
 function openDishSelectModal() {
     const modal = document.getElementById('dish-select-modal');
-    const dishList = document.getElementById('modal-dish-list');
+    if (!modal) return;
     
     // Сбрасываем фильтры при открытии
     modalSearchQuery = '';
     modalCategoryFilter = 'all';
-    document.getElementById('modal-dish-search').value = '';
-    document.getElementById('modal-category-filter').value = 'all';
+    
+    const modalSearchInput = document.getElementById('modal-dish-search');
+    const modalCategoryFilterSelect = document.getElementById('modal-category-filter');
+    
+    if (modalSearchInput) modalSearchInput.value = '';
+    if (modalCategoryFilterSelect) modalCategoryFilterSelect.value = 'all';
     
     updateModalCategoryFilter();
     renderModalDishList();
@@ -849,6 +900,8 @@ function openDishSelectModal() {
 // Рендеринг списка блюд в модальном окне с фильтрацией
 function renderModalDishList() {
     const dishList = document.getElementById('modal-dish-list');
+    if (!dishList) return;
+    
     dishList.innerHTML = '';
     
     let filteredDishes = dishes;
@@ -909,7 +962,7 @@ function renderModalDishList() {
         dishCard.addEventListener('click', function() {
             assignDishToSlot(index);
             const modal = document.getElementById('dish-select-modal');
-            modal.classList.remove('active');
+            if (modal) modal.classList.remove('active');
         });
         
         dishList.appendChild(dishCard);
@@ -919,9 +972,17 @@ function renderModalDishList() {
 // Открытие модального окна рецепта
 function openRecipeModal(dishIndex) {
     const modal = document.getElementById('recipe-modal');
+    if (!modal) return;
+    
     const dish = dishes[dishIndex];
     
-    document.getElementById('recipe-dish-name').textContent = dish.name;
+    const recipeDishName = document.getElementById('recipe-dish-name');
+    const recipeContent = document.getElementById('recipe-content');
+    const recipeActions = document.getElementById('recipe-actions');
+    
+    if (!recipeDishName || !recipeContent || !recipeActions) return;
+    
+    recipeDishName.textContent = dish.name;
     
     let imageHtml = '';
     if (dish.image) {
@@ -951,7 +1012,7 @@ function openRecipeModal(dishIndex) {
         stepsHtml += '</ol></div>';
     }
     
-    document.getElementById('recipe-content').innerHTML = `
+    recipeContent.innerHTML = `
         ${imageHtml}
         <div class="recipe-section">
             ${categoriesHtml}
@@ -970,81 +1031,120 @@ function openRecipeModal(dishIndex) {
         ${stepsHtml}
     `;
     
-    document.getElementById('recipe-actions').innerHTML = `
+    recipeActions.innerHTML = `
         <button class="btn" id="edit-recipe-btn" data-index="${dishIndex}">Редактировать рецепт</button>
         <button class="btn btn-danger" id="delete-recipe-btn" data-index="${dishIndex}">Удалить рецепт</button>
     `;
     
-    document.getElementById('edit-recipe-btn').addEventListener('click', function() {
-        const index = parseInt(this.getAttribute('data-index'));
-        editDish(index);
-        modal.classList.remove('active');
-    });
+    const editRecipeBtn = document.getElementById('edit-recipe-btn');
+    const deleteRecipeBtn = document.getElementById('delete-recipe-btn');
     
-    document.getElementById('delete-recipe-btn').addEventListener('click', function() {
-        const index = parseInt(this.getAttribute('data-index'));
-        showDeleteConfirmation(index);
-    });
+    if (editRecipeBtn) {
+        editRecipeBtn.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            editDish(index);
+            modal.classList.remove('active');
+        });
+    }
+    
+    if (deleteRecipeBtn) {
+        deleteRecipeBtn.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            showDeleteConfirmation(index);
+        });
+    }
     
     modal.classList.add('active');
 }
 
 // Показать подтверждение удаления
 function showDeleteConfirmation(index) {
+    const modal = document.getElementById('confirmation-modal');
+    const confirmationMessage = document.getElementById('confirmation-message');
+    
+    if (!modal || !confirmationMessage) return;
+    
     const dish = dishes[index];
-    document.getElementById('confirmation-message').textContent = 
+    confirmationMessage.textContent = 
         `Вы уверены, что хотите удалить рецепт "${dish.name}"?`;
     dishToDelete = index;
-    document.getElementById('confirmation-modal').classList.add('active');
+    modal.classList.add('active');
 }
 
 // Редактирование блюда
 function editDish(index) {
     const dish = dishes[index];
     
-    document.getElementById('dish-form-title').textContent = 'Редактировать блюдо';
-    document.getElementById('edit-dish-index').value = index;
-    document.getElementById('dish-name').value = dish.name;
-    document.getElementById('dish-description').value = dish.description || '';
-    document.getElementById('dish-calories').value = dish.calories;
-    document.getElementById('dish-protein').value = dish.protein;
-    document.getElementById('dish-fat').value = dish.fat;
-    document.getElementById('dish-carbs').value = dish.carbs;
+    const dishFormTitle = document.getElementById('dish-form-title');
+    const editDishIndex = document.getElementById('edit-dish-index');
+    const dishName = document.getElementById('dish-name');
+    const dishDescription = document.getElementById('dish-description');
+    const dishCalories = document.getElementById('dish-calories');
+    const dishProtein = document.getElementById('dish-protein');
+    const dishFat = document.getElementById('dish-fat');
+    const dishCarbs = document.getElementById('dish-carbs');
+    const imagePreview = document.getElementById('image-preview');
+    const cancelEdit = document.getElementById('cancel-edit');
+    const saveDishBtn = document.getElementById('save-dish-btn');
+    
+    if (!dishFormTitle || !editDishIndex || !dishName || !dishDescription || 
+        !dishCalories || !dishProtein || !dishFat || !dishCarbs || 
+        !imagePreview || !cancelEdit || !saveDishBtn) return;
+    
+    dishFormTitle.textContent = 'Редактировать блюдо';
+    editDishIndex.value = index;
+    dishName.value = dish.name;
+    dishDescription.value = dish.description || '';
+    dishCalories.value = dish.calories;
+    dishProtein.value = dish.protein;
+    dishFat.value = dish.fat;
+    dishCarbs.value = dish.carbs;
     
     if (dish.image) {
-        document.getElementById('image-preview').innerHTML = `<img src="${dish.image}" alt="Preview">`;
+        imagePreview.innerHTML = `<img src="${dish.image}" alt="Preview">`;
     } else {
-        document.getElementById('image-preview').innerHTML = 'Превью изображения';
+        imagePreview.innerHTML = 'Превью изображения';
     }
     
     // Устанавливаем выбранные категории
     setSelectedCategories(dish.categories || []);
     
-    document.getElementById('ingredient-list').innerHTML = '';
-    if (dish.ingredients && dish.ingredients.length > 0) {
-        dish.ingredients.forEach(ingredient => {
-            addIngredientField(ingredient.name, ingredient.amount, ingredient.unit);
-        });
-    } else {
-        addIngredientField();
+    const ingredientList = document.getElementById('ingredient-list');
+    const stepList = document.getElementById('step-list');
+    
+    if (ingredientList) {
+        ingredientList.innerHTML = '';
+        if (dish.ingredients && dish.ingredients.length > 0) {
+            dish.ingredients.forEach(ingredient => {
+                addIngredientField(ingredient.name, ingredient.amount, ingredient.unit);
+            });
+        } else {
+            addIngredientField();
+        }
     }
     
-    document.getElementById('step-list').innerHTML = '';
-    if (dish.steps && dish.steps.length > 0) {
-        dish.steps.forEach(step => {
-            addStepField(step);
-        });
-    } else {
-        addStepField();
+    if (stepList) {
+        stepList.innerHTML = '';
+        if (dish.steps && dish.steps.length > 0) {
+            dish.steps.forEach(step => {
+                addStepField(step);
+            });
+        } else {
+            addStepField();
+        }
     }
     
-    document.getElementById('cancel-edit').style.display = 'inline-block';
-    document.getElementById('save-dish-btn').textContent = 'Обновить блюдо';
+    cancelEdit.style.display = 'inline-block';
+    saveDishBtn.textContent = 'Обновить блюдо';
     
     document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
     document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
-    document.querySelector('[data-section="add-dish"]').classList.add('active');
-    document.getElementById('add-dish').classList.add('active');
+    
+    const addDishLink = document.querySelector('[data-section="add-dish"]');
+    const addDishSection = document.getElementById('add-dish');
+    
+    if (addDishLink) addDishLink.classList.add('active');
+    if (addDishSection) addDishSection.classList.add('active');
 }
 
 // Удаление блюда
@@ -1068,16 +1168,21 @@ async function deleteDish(index) {
 
 // Сохранение блюда
 async function saveDish() {
-    const name = document.getElementById('dish-name').value;
+    const name = document.getElementById('dish-name')?.value;
     const categories = getSelectedCategories();
-    const description = document.getElementById('dish-description').value;
-    const calories = parseInt(document.getElementById('dish-calories').value);
-    const protein = parseFloat(document.getElementById('dish-protein').value);
-    const fat = parseFloat(document.getElementById('dish-fat').value);
-    const carbs = parseFloat(document.getElementById('dish-carbs').value);
-    const editIndex = parseInt(document.getElementById('edit-dish-index').value);
+    const description = document.getElementById('dish-description')?.value;
+    const calories = parseInt(document.getElementById('dish-calories')?.value);
+    const protein = parseFloat(document.getElementById('dish-protein')?.value);
+    const fat = parseFloat(document.getElementById('dish-fat')?.value);
+    const carbs = parseFloat(document.getElementById('dish-carbs')?.value);
+    const editIndex = parseInt(document.getElementById('edit-dish-index')?.value);
     
-    const imageFile = document.getElementById('dish-image').files[0];
+    if (!name || isNaN(calories) || isNaN(protein) || isNaN(fat) || isNaN(carbs)) {
+        alert('Пожалуйста, заполните все обязательные поля корректно');
+        return;
+    }
+    
+    const imageFile = document.getElementById('dish-image')?.files[0];
     
     if (imageFile) {
         const reader = new FileReader();
@@ -1095,9 +1200,9 @@ async function saveDish() {
 async function completeSaveDish(name, categories, description, calories, protein, fat, carbs, imageBase64, editIndex) {
     const ingredients = [];
     document.querySelectorAll('.ingredient-item').forEach(item => {
-        const name = item.querySelector('.ingredient-name').value;
-        const amount = item.querySelector('.ingredient-amount').value;
-        const unit = item.querySelector('.ingredient-unit').value;
+        const name = item.querySelector('.ingredient-name')?.value;
+        const amount = item.querySelector('.ingredient-amount')?.value;
+        const unit = item.querySelector('.ingredient-unit')?.value;
         
         if (name && amount) {
             ingredients.push({ name, amount, unit });
@@ -1106,7 +1211,7 @@ async function completeSaveDish(name, categories, description, calories, protein
     
     const steps = [];
     document.querySelectorAll('.step-item').forEach(item => {
-        const description = item.querySelector('.step-description').value;
+        const description = item.querySelector('.step-description')?.value;
         
         if (description) {
             steps.push(description);
@@ -1149,14 +1254,23 @@ async function completeSaveDish(name, categories, description, calories, protein
 
 // Сброс формы блюда
 function resetDishForm() {
-    document.getElementById('dish-form').reset();
-    document.getElementById('dish-form-title').textContent = 'Добавить новое блюдо';
-    document.getElementById('edit-dish-index').value = '-1';
-    document.getElementById('ingredient-list').innerHTML = '';
-    document.getElementById('step-list').innerHTML = '';
-    document.getElementById('image-preview').innerHTML = 'Превью изображения';
-    document.getElementById('cancel-edit').style.display = 'none';
-    document.getElementById('save-dish-btn').textContent = 'Сохранить блюдо';
+    const dishForm = document.getElementById('dish-form');
+    const dishFormTitle = document.getElementById('dish-form-title');
+    const editDishIndex = document.getElementById('edit-dish-index');
+    const ingredientList = document.getElementById('ingredient-list');
+    const stepList = document.getElementById('step-list');
+    const imagePreview = document.getElementById('image-preview');
+    const cancelEdit = document.getElementById('cancel-edit');
+    const saveDishBtn = document.getElementById('save-dish-btn');
+    
+    if (dishForm) dishForm.reset();
+    if (dishFormTitle) dishFormTitle.textContent = 'Добавить новое блюдо';
+    if (editDishIndex) editDishIndex.value = '-1';
+    if (ingredientList) ingredientList.innerHTML = '';
+    if (stepList) stepList.innerHTML = '';
+    if (imagePreview) imagePreview.innerHTML = 'Превью изображения';
+    if (cancelEdit) cancelEdit.style.display = 'none';
+    if (saveDishBtn) saveDishBtn.textContent = 'Сохранить блюдо';
     
     // Сбрасываем выбор категорий
     setSelectedCategories([]);
@@ -1168,6 +1282,8 @@ function resetDishForm() {
 // Добавление поля ингредиента
 function addIngredientField(name = '', amount = '', unit = 'г') {
     const ingredientList = document.getElementById('ingredient-list');
+    if (!ingredientList) return;
+    
     const ingredientItem = document.createElement('div');
     ingredientItem.className = 'ingredient-item';
     
@@ -1195,6 +1311,8 @@ function addIngredientField(name = '', amount = '', unit = 'г') {
 // Добавление поля шага приготовления
 function addStepField(description = '') {
     const stepList = document.getElementById('step-list');
+    if (!stepList) return;
+    
     const stepItem = document.createElement('div');
     stepItem.className = 'step-item';
     stepItem.innerHTML = `
@@ -1223,10 +1341,15 @@ function updateWeekSummary() {
         totalCarbs += dish.carbs;
     });
     
-    document.getElementById('weekly-calories').textContent = totalCalories;
-    document.getElementById('weekly-protein').textContent = totalProtein.toFixed(1);
-    document.getElementById('weekly-fat').textContent = totalFat.toFixed(1);
-    document.getElementById('weekly-carbs').textContent = totalCarbs.toFixed(1);
+    const weeklyCalories = document.getElementById('weekly-calories');
+    const weeklyProtein = document.getElementById('weekly-protein');
+    const weeklyFat = document.getElementById('weekly-fat');
+    const weeklyCarbs = document.getElementById('weekly-carbs');
+    
+    if (weeklyCalories) weeklyCalories.textContent = totalCalories;
+    if (weeklyProtein) weeklyProtein.textContent = totalProtein.toFixed(1);
+    if (weeklyFat) weeklyFat.textContent = totalFat.toFixed(1);
+    if (weeklyCarbs) weeklyCarbs.textContent = totalCarbs.toFixed(1);
 }
 
 // Обновление списка покупок
@@ -1345,113 +1468,173 @@ function importData(event) {
 // ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
 
 function setupEventListeners() {
+    console.log('Настройка обработчиков событий...');
+    
     // Очистка недели
-    document.getElementById('clear-week').addEventListener('click', clearWeek);
+    const clearWeekBtn = document.getElementById('clear-week');
+    if (clearWeekBtn) {
+        clearWeekBtn.addEventListener('click', clearWeek);
+    }
     
     // Поиск в разделе "Мои блюда"
-    document.getElementById('dish-search').addEventListener('input', function(e) {
-        searchQuery = e.target.value;
-        renderDishList();
-    });
+    const dishSearch = document.getElementById('dish-search');
+    if (dishSearch) {
+        dishSearch.addEventListener('input', function(e) {
+            searchQuery = e.target.value;
+            renderDishList();
+        });
+    }
     
     // Поиск и фильтрация в модальном окне
-    document.getElementById('modal-dish-search').addEventListener('input', function(e) {
-        modalSearchQuery = e.target.value;
-        renderModalDishList();
-    });
+    const modalDishSearch = document.getElementById('modal-dish-search');
+    if (modalDishSearch) {
+        modalDishSearch.addEventListener('input', function(e) {
+            modalSearchQuery = e.target.value;
+            renderModalDishList();
+        });
+    }
     
-    document.getElementById('modal-category-filter').addEventListener('change', function(e) {
-        modalCategoryFilter = e.target.value;
-        renderModalDishList();
-    });
+    const modalCategoryFilter = document.getElementById('modal-category-filter');
+    if (modalCategoryFilter) {
+        modalCategoryFilter.addEventListener('change', function(e) {
+            modalCategoryFilter = e.target.value;
+            renderModalDishList();
+        });
+    }
     
     // Форма блюда
-    document.getElementById('dish-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        saveDish();
-    });
+    const dishForm = document.getElementById('dish-form');
+    if (dishForm) {
+        dishForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveDish();
+        });
+    }
     
-    document.getElementById('cancel-edit').addEventListener('click', resetDishForm);
+    const cancelEdit = document.getElementById('cancel-edit');
+    if (cancelEdit) {
+        cancelEdit.addEventListener('click', resetDishForm);
+    }
     
-    document.getElementById('dish-image').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('image-preview').innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
+    const dishImage = document.getElementById('dish-image');
+    if (dishImage) {
+        dishImage.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imagePreview = document.getElementById('image-preview');
+                    if (imagePreview) imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
     
-    document.getElementById('add-ingredient').addEventListener('click', function() {
-        addIngredientField();
-    });
+    const addIngredientBtn = document.getElementById('add-ingredient');
+    if (addIngredientBtn) {
+        addIngredientBtn.addEventListener('click', function() {
+            addIngredientField();
+        });
+    }
     
-    document.getElementById('add-step').addEventListener('click', function() {
-        addStepField();
-    });
+    const addStepBtn = document.getElementById('add-step');
+    if (addStepBtn) {
+        addStepBtn.addEventListener('click', function() {
+            addStepField();
+        });
+    }
     
     // Категории
-    document.getElementById('add-category').addEventListener('click', addCategory);
+    const addCategoryBtn = document.getElementById('add-category');
+    if (addCategoryBtn) {
+        addCategoryBtn.addEventListener('click', addCategory);
+    }
     
     // Синхронизация
-    document.getElementById('setup-sync').addEventListener('click', function() {
-        document.getElementById('sync-config').style.display = 'block';
-    });
+    const setupSyncBtn = document.getElementById('setup-sync');
+    if (setupSyncBtn) {
+        setupSyncBtn.addEventListener('click', function() {
+            const syncConfig = document.getElementById('sync-config');
+            if (syncConfig) syncConfig.style.display = 'block';
+        });
+    }
     
-    document.getElementById('save-sync-config').addEventListener('click', async function() {
-        const token = document.getElementById('github-token').value;
-        const gistId = document.getElementById('gist-id').value;
-        
-        if (!token) {
-            alert('Введите GitHub Personal Access Token');
-            return;
-        }
-        
-        syncConfig.token = token;
-        if (gistId) syncConfig.gistId = gistId;
-        
-        localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
-        updateSyncUI();
-        
-        await loadFromGist();
-    });
-    
-    document.getElementById('manual-sync').addEventListener('click', forceSync);
-    document.getElementById('export-data').addEventListener('click', exportData);
-    document.getElementById('import-data').addEventListener('click', function() {
-        document.getElementById('import-file').click();
-    });
-    
-    document.getElementById('disable-sync').addEventListener('click', function() {
-        if (confirm('Отключить синхронизацию? Все данные будут потеряны!')) {
-            syncConfig = {};
-            localStorage.removeItem('syncConfig');
-            dishes = [];
-            weekPlan = {};
-            shoppingList = {};
-            categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'];
-            mealsPerDay = {
-                'Понедельник': 3,
-                'Вторник': 3,
-                'Среда': 3,
-                'Четверг': 3,
-                'Пятница': 3,
-                'Суббота': 3,
-                'Воскресенье': 3
-            };
+    const saveSyncConfigBtn = document.getElementById('save-sync-config');
+    if (saveSyncConfigBtn) {
+        saveSyncConfigBtn.addEventListener('click', async function() {
+            const githubToken = document.getElementById('github-token');
+            const gistId = document.getElementById('gist-id');
+            
+            if (!githubToken || !gistId) return;
+            
+            const token = githubToken.value;
+            const gistIdValue = gistId.value;
+            
+            if (!token) {
+                alert('Введите GitHub Personal Access Token');
+                return;
+            }
+            
+            syncConfig.token = token;
+            if (gistIdValue) syncConfig.gistId = gistIdValue;
+            
+            localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
             updateSyncUI();
-            renderWeekPlanner();
-            renderCategoryList();
-            renderDishList();
-            renderCategoriesManagement();
-            updateCategoriesSelect();
-            updateModalCategoryFilter();
-            renderShoppingList();
-            updateWeekSummary();
-        }
-    });
+            
+            await loadFromGist();
+        });
+    }
+    
+    const manualSyncBtn = document.getElementById('manual-sync');
+    if (manualSyncBtn) {
+        manualSyncBtn.addEventListener('click', forceSync);
+    }
+    
+    const exportDataBtn = document.getElementById('export-data');
+    if (exportDataBtn) {
+        exportDataBtn.addEventListener('click', exportData);
+    }
+    
+    const importDataBtn = document.getElementById('import-data');
+    if (importDataBtn) {
+        importDataBtn.addEventListener('click', function() {
+            const importFile = document.getElementById('import-file');
+            if (importFile) importFile.click();
+        });
+    }
+    
+    const disableSyncBtn = document.getElementById('disable-sync');
+    if (disableSyncBtn) {
+        disableSyncBtn.addEventListener('click', function() {
+            if (confirm('Отключить синхронизацию? Все данные будут потеряны!')) {
+                syncConfig = {};
+                localStorage.removeItem('syncConfig');
+                dishes = [];
+                weekPlan = {};
+                shoppingList = {};
+                categories = ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'];
+                mealsPerDay = {
+                    'Понедельник': 3,
+                    'Вторник': 3,
+                    'Среда': 3,
+                    'Четверг': 3,
+                    'Пятница': 3,
+                    'Суббота': 3,
+                    'Воскресенье': 3
+                };
+                updateSyncUI();
+                renderWeekPlanner();
+                renderCategoryList();
+                renderDishList();
+                renderCategoriesManagement();
+                updateCategoriesSelect();
+                updateModalCategoryFilter();
+                renderShoppingList();
+                updateWeekSummary();
+            }
+        });
+    }
     
     // Модальные окна
     document.querySelectorAll('.close-modal').forEach(button => {
@@ -1470,18 +1653,26 @@ function setupEventListeners() {
         });
     });
     
-    document.getElementById('confirm-delete').addEventListener('click', function() {
-        if (dishToDelete !== null) {
-            deleteDish(dishToDelete);
-            document.getElementById('confirmation-modal').classList.remove('active');
-            dishToDelete = null;
-        }
-    });
+    const confirmDeleteBtn = document.getElementById('confirm-delete');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (dishToDelete !== null) {
+                deleteDish(dishToDelete);
+                const confirmationModal = document.getElementById('confirmation-modal');
+                if (confirmationModal) confirmationModal.classList.remove('active');
+                dishToDelete = null;
+            }
+        });
+    }
     
-    document.getElementById('cancel-delete').addEventListener('click', function() {
-        document.getElementById('confirmation-modal').classList.remove('active');
-        dishToDelete = null;
-    });
+    const cancelDeleteBtn = document.getElementById('cancel-delete');
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', function() {
+            const confirmationModal = document.getElementById('confirmation-modal');
+            if (confirmationModal) confirmationModal.classList.remove('active');
+            dishToDelete = null;
+        });
+    }
     
     const importInput = document.createElement('input');
     importInput.type = 'file';
@@ -1490,6 +1681,8 @@ function setupEventListeners() {
     importInput.style.display = 'none';
     importInput.addEventListener('change', importData);
     document.body.appendChild(importInput);
+    
+    console.log('Обработчики событий настроены');
 }
 
 // Инициализация пустых полей при загрузке
