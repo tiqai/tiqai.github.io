@@ -171,7 +171,7 @@ async function saveToSeparateGists() {
                 carbs: dish.carbs,
                 ingredients: dish.ingredients,
                 steps: dish.steps,
-                // Убираем изображение из основных данных
+                // Сохраняем только флаг что изображение есть
                 hasImage: !!dish.image
             })),
             weekPlan,
@@ -182,7 +182,8 @@ async function saveToSeparateGists() {
             version: '1.1'
         };
 
-        // Сохраняем основные данные
+        console.log('💾 Сохранение основных данных, блюд:', dishes.length);
+
         const mainGistData = {
             files: {
                 'meal-planner-data.json': {
@@ -203,15 +204,18 @@ async function saveToSeparateGists() {
         });
 
         if (!response.ok) {
-            throw new Error('Ошибка сохранения основных данных');
+            throw new Error('Ошибка сохранения основных данных: ' + response.status);
         }
 
         // Сохраняем изображения в отдельный Gist (если они есть)
         const dishesWithImages = dishes.filter(dish => dish.image);
+        console.log('🖼️ Блюд с изображениями для сохранения:', dishesWithImages.length);
+
         if (dishesWithImages.length > 0) {
             const imagesData = {
                 images: {},
-                lastSync: new Date().toISOString()
+                lastSync: new Date().toISOString(),
+                dishCount: dishesWithImages.length
             };
 
             // Собираем только изображения
@@ -232,7 +236,7 @@ async function saveToSeparateGists() {
 
             // Используем отдельный Gist для изображений
             if (syncConfig.imagesGistId) {
-                // Обновляем существующий Gist с изображениями
+                console.log('🔄 Обновление Gist с изображениями:', syncConfig.imagesGistId);
                 response = await fetch(`https://api.github.com/gists/${syncConfig.imagesGistId}`, {
                     method: 'PATCH',
                     headers: {
@@ -243,7 +247,7 @@ async function saveToSeparateGists() {
                     body: JSON.stringify(imagesGistData)
                 });
             } else {
-                // Создаем новый Gist для изображений
+                console.log('🆕 Создание нового Gist для изображений');
                 response = await fetch('https://api.github.com/gists', {
                     method: 'POST',
                     headers: {
@@ -261,13 +265,21 @@ async function saveToSeparateGists() {
                     console.log('✅ Создан отдельный Gist для изображений:', result.id);
                 }
             }
+
+            if (response.ok) {
+                console.log('✅ Изображения сохранены в отдельный Gist');
+            } else {
+                console.error('❌ Ошибка сохранения изображений:', response.status);
+            }
+        } else {
+            console.log('ℹ️ Нет изображений для сохранения');
         }
 
         syncConfig.lastSync = new Date().toISOString();
         localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
 
         updateSyncStatus('synced', 'Данные сохранены');
-        console.log('✅ Данные сохранены в раздельные Gist');
+        console.log('✅ Все данные сохранены в раздельные Gist');
 
     } catch (error) {
         console.error('❌ Ошибка сохранения:', error);
@@ -294,33 +306,36 @@ async function loadFromGist() {
 
         if (response.ok) {
             const text = await response.text();
-            console.log('Получены сырые данные, длина:', text.length);
-            
+            console.log('📥 Получены сырые данные, длина:', text.length);
+
             const gist = safeJSONParse(text);
             const file = gist.files['meal-planner-data.json'];
-            
+
             if (file && file.content) {
-                console.log('Содержимое файла получено, длина:', file.content.length);
+                console.log('📄 Содержимое файла получено, длина:', file.content.length);
                 const serverData = safeJSONParse(file.content);
-                console.log('Данные загружены с сервера:', serverData);
-                
+                console.log('✅ Данные загружены с сервера, блюд:', (serverData.dishes || []).length);
+
                 // Восстанавливаем данные
                 dishes = serverData.dishes || [];
                 weekPlan = serverData.weekPlan || {};
                 shoppingList = serverData.shoppingList || {};
                 categories = serverData.categories || categories;
-                
+
                 // Восстанавливаем mealsPerDay
                 if (serverData.mealsPerDay) {
                     const currentMealsPerDay = {...mealsPerDay};
                     mealsPerDay = {...currentMealsPerDay, ...serverData.mealsPerDay};
                 }
 
-                // Если есть флаг что есть изображения, загружаем их
-                if (serverData.hasImages && syncConfig.imagesGistId) {
+                // ВСЕГДА загружаем изображения если есть imagesGistId
+                if (syncConfig.imagesGistId) {
+                    console.log('🖼️ Загрузка изображений...');
                     await loadImagesFromGist();
+                } else {
+                    console.log('ℹ️ Нет отдельного Gist для изображений');
                 }
-                
+
                 // Обновляем интерфейс
                 renderWeekPlanner();
                 renderCategoryList();
@@ -329,21 +344,19 @@ async function loadFromGist() {
                 updateCategoriesSelect();
                 renderShoppingList();
                 updateWeekSummary();
-                
+
                 updateSyncStatus('synced', 'Данные загружены');
-                console.log('✅ Данные загружены с сервера');
             } else {
-                // Файл не найден, создаем пустые данные
-                console.log('Файл не найден, создаем новый');
+                console.log('❌ Файл не найден, создаем новый');
                 await saveToGist();
             }
         } else {
             throw new Error('Ошибка загрузки: ' + response.status);
         }
     } catch (error) {
-        console.error('Ошибка загрузки:', error);
+        console.error('❌ Ошибка загрузки:', error);
         updateSyncStatus('error', 'Ошибка загрузки: ' + error.message);
-        
+
         // Показываем пустой интерфейс при ошибке
         dishes = [];
         weekPlan = {};
@@ -363,9 +376,13 @@ async function loadFromGist() {
 
 // Загрузка изображений из отдельного Gist
 async function loadImagesFromGist() {
-    if (!syncConfig.imagesGistId) return;
-    
+    if (!syncConfig.imagesGistId) {
+        console.log('❌ Нет ID Gist для изображений');
+        return;
+    }
+
     try {
+        console.log('🔄 Загрузка изображений из Gist:', syncConfig.imagesGistId);
         const response = await fetch(`https://api.github.com/gists/${syncConfig.imagesGistId}`, {
             headers: {
                 'Authorization': `token ${syncConfig.token}`,
@@ -373,25 +390,39 @@ async function loadImagesFromGist() {
             }
         });
 
-        if (response.ok) {
-            const gist = await response.json();
-            const file = gist.files['meal-planner-images.json'];
-            
-            if (file && file.content) {
-                const imagesData = JSON.parse(file.content);
-                
-                // Восстанавливаем изображения для блюд
-                dishes.forEach(dish => {
-                    if (imagesData.images && imagesData.images[dish.name]) {
-                        dish.image = imagesData.images[dish.name];
-                    }
-                });
-                
-                console.log('✅ Изображения загружены из отдельного Gist');
-            }
+        if (!response.ok) {
+            console.error('❌ Ошибка загрузки Gist с изображениями:', response.status);
+            return;
         }
+
+        const gist = await response.json();
+        const file = gist.files['meal-planner-images.json'];
+
+        if (!file || !file.content) {
+            console.log('❌ Файл с изображениями не найден или пуст');
+            return;
+        }
+
+        const imagesData = JSON.parse(file.content);
+        console.log('✅ Данные изображений загружены, количество:', Object.keys(imagesData.images || {}).length);
+
+        // Восстанавливаем изображения для блюд
+        let restoredCount = 0;
+        dishes.forEach(dish => {
+            if (imagesData.images && imagesData.images[dish.name]) {
+                dish.image = imagesData.images[dish.name];
+                restoredCount++;
+            }
+        });
+
+        console.log(`✅ Восстановлено изображений: ${restoredCount} из ${dishes.length} блюд`);
+
+        // Обновляем интерфейс чтобы показать изображения
+        renderDishList();
+        renderWeekPlanner();
+
     } catch (error) {
-        console.error('Ошибка загрузки изображений:', error);
+        console.error('❌ Ошибка загрузки изображений:', error);
     }
 }
 
