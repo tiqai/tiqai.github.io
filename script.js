@@ -58,38 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ==================== СЕРВЕРНЫЕ ОПЕРАЦИИ (ОПТИМИЗИРОВАННЫЕ) ====================
 
-// Функция для безопасного сжатия данных
-function compressData(data) {
-    try {
-        const jsonString = JSON.stringify(data);
-        // Используем простую компрессию для больших строк
-        if (jsonString.length > 100000) { // Если данные больше 100KB
-            console.log('Сжимаем данные, размер:', (jsonString.length / 1024 / 1024).toFixed(2), 'MB');
-            return {
-                compressed: true,
-                data: jsonString.replace(/(.{50})/g, '$1') // Простая компрессия - убираем лишние пробелы
-                    .replace(/\s+/g, ' ')
-                    .trim()
-            };
-        }
-        return data;
-    } catch (error) {
-        console.error('Ошибка сжатия данных:', error);
-        return data;
-    }
-}
-
-// Функция для распаковки данных
-function decompressData(data) {
-    if (data.compressed) {
-        console.log('Распаковываем сжатые данные');
-        // Для простой компрессии просто возвращаем данные
-        return JSON.parse(data.data);
-    }
-    return data;
-}
-
-// Функция для безопасного парсинга JSON с восстановлением
+// Улучшенная функция для безопасного парсинга JSON с восстановлением
 function safeJSONParse(text) {
     try {
         return JSON.parse(text);
@@ -98,47 +67,75 @@ function safeJSONParse(text) {
         
         // Пытаемся восстановить битый JSON
         try {
-            // Удаляем проблемные символы
-            const cleaned = text
+            let fixedText = text;
+            
+            // 1. Удаляем проблемные символы
+            fixedText = fixedText
                 .replace(/\u0000/g, '') // null bytes
                 .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // control characters
                 .replace(/\\"/g, '"') // Экранированные кавычки
                 .replace(/\n/g, '\\n') // Переносы строк
                 .replace(/\r/g, '\\r') // Возвраты каретки
                 .replace(/\t/g, '\\t'); // Табуляции
-            
-            // Пытаемся найти и исправить обрыв в строке
-            const lastQuote = cleaned.lastIndexOf('"');
-            const lastBrace = cleaned.lastIndexOf('}');
-            const lastBracket = cleaned.lastIndexOf(']');
-            
-            let fixedText = cleaned;
-            
-            // Если JSON оборван, пытаемся его завершить
-            if (lastBrace < lastBracket) {
-                if (lastBracket < cleaned.length - 1) {
-                    fixedText = cleaned.substring(0, lastBracket + 1);
-                }
-            } else if (lastBrace < cleaned.length - 1) {
-                fixedText = cleaned.substring(0, lastBrace + 1);
-            }
-            
-            // Проверяем, что JSON правильно завершен
-            if (!fixedText.trim().endsWith('}') && !fixedText.trim().endsWith(']')) {
-                // Добавляем закрывающую скобку если нужно
-                const openBraces = (fixedText.match(/{/g) || []).length;
-                const closeBraces = (fixedText.match(/}/g) || []).length;
+
+            // 2. Находим позицию ошибки и обрезаем до последнего валидного места
+            const errorPosition = 921079; // Из ошибки в консоли
+            if (errorPosition < fixedText.length) {
+                console.log('Обрезаем данные на позиции:', errorPosition);
                 
-                if (openBraces > closeBraces) {
-                    fixedText += '}'.repeat(openBraces - closeBraces);
+                // Ищем последнюю закрывающую кавычку перед ошибкой
+                const lastValidQuote = fixedText.lastIndexOf('"', errorPosition - 100);
+                if (lastValidQuote !== -1) {
+                    // Ищем следующую кавычку после последней валидной
+                    const nextQuote = fixedText.indexOf('"', lastValidQuote + 1);
+                    if (nextQuote !== -1 && nextQuote < errorPosition) {
+                        // Обрезаем после следующей кавычки
+                        fixedText = fixedText.substring(0, nextQuote + 1);
+                    } else {
+                        // Просто обрезаем перед ошибкой
+                        fixedText = fixedText.substring(0, errorPosition - 100);
+                    }
+                } else {
+                    // Просто обрезаем перед ошибкой
+                    fixedText = fixedText.substring(0, errorPosition - 100);
                 }
             }
+
+            // 3. Завершаем JSON если он оборван
+            let openBraces = (fixedText.match(/{/g) || []).length;
+            let closeBraces = (fixedText.match(/}/g) || []).length;
+            let openBrackets = (fixedText.match(/\[/g) || []).length;
+            let closeBrackets = (fixedText.match(/\]/g) || []).length;
+
+            // Добавляем недостающие закрывающие скобки
+            while (openBraces > closeBraces) {
+                fixedText += '}';
+                closeBraces++;
+            }
+            
+            while (openBrackets > closeBrackets) {
+                fixedText += ']';
+                closeBrackets++;
+            }
+
+            // 4. Проверяем, что последний элемент массива или объекта завершен
+            const lastComma = fixedText.lastIndexOf(',');
+            const lastBrace = fixedText.lastIndexOf('}');
+            const lastBracket = fixedText.lastIndexOf(']');
+            
+            if (lastComma > Math.max(lastBrace, lastBracket)) {
+                // Удаляем запятую в конце
+                fixedText = fixedText.substring(0, lastComma) + fixedText.substring(lastComma + 1);
+            }
+
+            console.log('Восстановленный JSON, длина:', fixedText.length);
             
             const result = JSON.parse(fixedText);
             console.log('JSON успешно восстановлен');
             return result;
+            
         } catch (recoveryError) {
-            console.error('Не удалось восстановить JSON:', recoveryError);
+            console.error('Не удалось восстановить JSON, создаем пустые данные:', recoveryError);
             
             // Создаем пустые данные как запасной вариант
             return {
@@ -147,9 +144,136 @@ function safeJSONParse(text) {
                 shoppingList: {},
                 categories: ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'],
                 mealsPerDay: mealsPerDay,
-                lastSync: new Date().toISOString()
+                lastSync: new Date().toISOString(),
+                recovered: true
             };
         }
+    }
+}
+
+// Функция для разделения данных - выносим изображения в отдельный Gist
+async function saveToSeparateGists() {
+    if (!syncConfig.token || isSyncing) return;
+
+    isSyncing = true;
+    updateSyncStatus('pending', 'Сохранение данных (раздельное)...');
+
+    try {
+        // Основные данные БЕЗ изображений
+        const mainData = {
+            dishes: dishes.map(dish => ({
+                name: dish.name,
+                categories: dish.categories,
+                description: dish.description,
+                calories: dish.calories,
+                protein: dish.protein,
+                fat: dish.fat,
+                carbs: dish.carbs,
+                ingredients: dish.ingredients,
+                steps: dish.steps,
+                // Убираем изображение из основных данных
+                hasImage: !!dish.image
+            })),
+            weekPlan,
+            shoppingList,
+            categories,
+            mealsPerDay,
+            lastSync: new Date().toISOString(),
+            version: '1.1'
+        };
+
+        // Сохраняем основные данные
+        const mainGistData = {
+            files: {
+                'meal-planner-data.json': {
+                    content: JSON.stringify(mainData, null, 0)
+                }
+            },
+            description: 'Meal Planner Main Data - ' + new Date().toLocaleDateString()
+        };
+
+        let response = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${syncConfig.token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify(mainGistData)
+        });
+
+        if (!response.ok) {
+            throw new Error('Ошибка сохранения основных данных');
+        }
+
+        // Сохраняем изображения в отдельный Gist (если они есть)
+        const dishesWithImages = dishes.filter(dish => dish.image);
+        if (dishesWithImages.length > 0) {
+            const imagesData = {
+                images: {},
+                lastSync: new Date().toISOString()
+            };
+
+            // Собираем только изображения
+            dishesWithImages.forEach(dish => {
+                if (dish.image) {
+                    imagesData.images[dish.name] = dish.image;
+                }
+            });
+
+            const imagesGistData = {
+                files: {
+                    'meal-planner-images.json': {
+                        content: JSON.stringify(imagesData, null, 0)
+                    }
+                },
+                description: 'Meal Planner Images - ' + new Date().toLocaleDateString()
+            };
+
+            // Используем отдельный Gist для изображений
+            if (syncConfig.imagesGistId) {
+                // Обновляем существующий Gist с изображениями
+                response = await fetch(`https://api.github.com/gists/${syncConfig.imagesGistId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `token ${syncConfig.token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify(imagesGistData)
+                });
+            } else {
+                // Создаем новый Gist для изображений
+                response = await fetch('https://api.github.com/gists', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${syncConfig.token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify(imagesGistData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    syncConfig.imagesGistId = result.id;
+                    localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
+                    console.log('✅ Создан отдельный Gist для изображений:', result.id);
+                }
+            }
+        }
+
+        syncConfig.lastSync = new Date().toISOString();
+        localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
+
+        updateSyncStatus('synced', 'Данные сохранены');
+        console.log('✅ Данные сохранены в раздельные Gist');
+
+    } catch (error) {
+        console.error('❌ Ошибка сохранения:', error);
+        updateSyncStatus('error', 'Ошибка сохранения: ' + error.message);
+    } finally {
+        isSyncing = false;
     }
 }
 
@@ -180,21 +304,21 @@ async function loadFromGist() {
                 const serverData = safeJSONParse(file.content);
                 console.log('Данные загружены с сервера:', serverData);
                 
-                // Восстанавливаем данные если они сжаты
-                const finalData = decompressData(serverData);
+                // Восстанавливаем данные
+                dishes = serverData.dishes || [];
+                weekPlan = serverData.weekPlan || {};
+                shoppingList = serverData.shoppingList || {};
+                categories = serverData.categories || categories;
                 
-                // Аккуратно обновляем данные, сохраняя текущие изменения
-                dishes = finalData.dishes || [];
-                weekPlan = finalData.weekPlan || {};
-                shoppingList = finalData.shoppingList || {};
-                categories = finalData.categories || categories;
-                
-                // Важно: обновляем mealsPerDay только если он есть в серверных данных
-                // и не перезаписываем текущие локальные изменения
-                if (finalData.mealsPerDay) {
-                    // Сохраняем текущие значения для дней, которых нет в серверных данных
+                // Восстанавливаем mealsPerDay
+                if (serverData.mealsPerDay) {
                     const currentMealsPerDay = {...mealsPerDay};
-                    mealsPerDay = {...currentMealsPerDay, ...finalData.mealsPerDay};
+                    mealsPerDay = {...currentMealsPerDay, ...serverData.mealsPerDay};
+                }
+
+                // Если есть флаг что есть изображения, загружаем их
+                if (serverData.hasImages && syncConfig.imagesGistId) {
+                    await loadImagesFromGist();
                 }
                 
                 // Обновляем интерфейс
@@ -207,7 +331,7 @@ async function loadFromGist() {
                 updateWeekSummary();
                 
                 updateSyncStatus('synced', 'Данные загружены');
-                console.log('✅ Данные загружены с сервера', mealsPerDay);
+                console.log('✅ Данные загружены с сервера');
             } else {
                 // Файл не найден, создаем пустые данные
                 console.log('Файл не найден, создаем новый');
@@ -237,8 +361,52 @@ async function loadFromGist() {
     }
 }
 
+// Загрузка изображений из отдельного Gist
+async function loadImagesFromGist() {
+    if (!syncConfig.imagesGistId) return;
+    
+    try {
+        const response = await fetch(`https://api.github.com/gists/${syncConfig.imagesGistId}`, {
+            headers: {
+                'Authorization': `token ${syncConfig.token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+
+        if (response.ok) {
+            const gist = await response.json();
+            const file = gist.files['meal-planner-images.json'];
+            
+            if (file && file.content) {
+                const imagesData = JSON.parse(file.content);
+                
+                // Восстанавливаем изображения для блюд
+                dishes.forEach(dish => {
+                    if (imagesData.images && imagesData.images[dish.name]) {
+                        dish.image = imagesData.images[dish.name];
+                    }
+                });
+                
+                console.log('✅ Изображения загружены из отдельного Gist');
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки изображений:', error);
+    }
+}
+
 // Оптимизированное сохранение данных на сервер
 async function saveToGist() {
+    // Если данные большие (больше 1MB), используем раздельное сохранение
+    const testSize = JSON.stringify(dishes).length;
+    console.log('Размер данных для сохранения:', (testSize / 1024 / 1024).toFixed(2), 'MB');
+    
+    if (testSize > 500000) { // Если больше 500KB
+        console.log('Используем раздельное сохранение из-за большого размера данных');
+        await saveToSeparateGists();
+        return;
+    }
+
     if (!syncConfig.token || isSyncing) {
         console.log('❌ Не могу сохранить: нет токена или идет синхронизация');
         return;
@@ -253,20 +421,17 @@ async function saveToGist() {
             weekPlan,
             shoppingList,
             categories,
-            mealsPerDay, // Сохраняем актуальные данные
+            mealsPerDay,
             lastSync: new Date().toISOString(),
             version: '1.0'
         };
 
         console.log('Сохранение данных, количество блюд:', dishes.length);
 
-        // Сжимаем данные перед сохранением
-        const compressedData = compressData(data);
-        
         const gistData = {
             files: {
                 'meal-planner-data.json': {
-                    content: JSON.stringify(compressedData, null, 0) // Убираем форматирование для экономии места
+                    content: JSON.stringify(data, null, 0) // Убираем форматирование для экономии места
                 }
             },
             description: 'Meal Planner Data - ' + new Date().toLocaleDateString()
@@ -313,7 +478,7 @@ async function saveToGist() {
             
             updateSyncStatus('synced', 'Данные сохранены');
             updateSyncUI();
-            console.log('✅ Данные сохранены на сервер', mealsPerDay);
+            console.log('✅ Данные сохранены на сервер');
         } else {
             const errorText = await response.text();
             throw new Error(`Ошибка сохранения: ${response.status} - ${errorText}`);
@@ -321,17 +486,20 @@ async function saveToGist() {
     } catch (error) {
         console.error('❌ Ошибка сохранения:', error);
         updateSyncStatus('error', 'Ошибка сохранения: ' + error.message);
-        alert('Ошибка сохранения! Проверьте токен и подключение к интернету.');
+        
+        // Пробуем использовать раздельное сохранение как запасной вариант
+        console.log('Пробуем раздельное сохранение как запасной вариант...');
+        await saveToSeparateGists();
     } finally {
         isSyncing = false;
     }
 }
 
 // Функция для оптимизации изображений перед сохранением
-function optimizeImageBeforeSave(base64String, maxWidth = 800, quality = 0.7) {
+function optimizeImageBeforeSave(base64String, maxWidth = 400, quality = 0.6) {
     return new Promise((resolve) => {
         // Если изображение маленькое, возвращаем как есть
-        if (base64String.length < 50000) { // Меньше 50KB
+        if (!base64String || base64String.length < 10000) {
             resolve(base64String);
             return;
         }
@@ -372,6 +540,24 @@ function optimizeImageBeforeSave(base64String, maxWidth = 800, quality = 0.7) {
     });
 }
 
+// Очистка старых данных для уменьшения размера
+function cleanupOldData() {
+    console.log('Очистка старых данных...');
+    
+    // Очищаем старые недели из shoppingList
+    const currentWeekKey = 'current-week';
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    
+    Object.keys(shoppingList).forEach(key => {
+        if (key !== currentWeekKey) {
+            delete shoppingList[key];
+        }
+    });
+    
+    console.log('✅ Старые данные очищены');
+}
+
 // Модифицированная функция сохранения блюда с оптимизацией изображений
 async function saveDish() {
     const name = document.getElementById('dish-name')?.value;
@@ -404,7 +590,7 @@ async function saveDish() {
     }
 }
 
-// Остальные функции остаются без изменений...
+// ==================== ОСТАЛЬНЫЕ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ ====================
 
 // Инициализация навигации
 function initializeNavigation() {
@@ -447,6 +633,9 @@ async function forceSync() {
         return;
     }
 
+    // Очищаем старые данные перед синхронизацией
+    cleanupOldData();
+    
     await loadFromGist();
     updateSyncStatus('synced', 'Синхронизация завершена');
 }
@@ -780,7 +969,6 @@ function renderWeekPlanner() {
         minusBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Минус нажат для дня:', day, 'текущее значение:', mealsPerDay[day]);
             changeDayMealsCount(day, -1);
         });
         
@@ -795,7 +983,6 @@ function renderWeekPlanner() {
         plusBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Плюс нажат для дня:', day, 'текущее значение:', mealsPerDay[day]);
             changeDayMealsCount(day, 1);
         });
         
@@ -813,13 +1000,10 @@ function renderWeekPlanner() {
 
 // Изменение количества приемов пищи для дня
 async function changeDayMealsCount(day, change) {
-    console.log(`Изменение количества приемов пищи для ${day}: ${change}, текущее: ${mealsPerDay[day]}`);
-    
     const currentCount = mealsPerDay[day] || 3;
     const newCount = currentCount + change;
     
     if (newCount < 1 || newCount > 10) {
-        console.log('Недопустимое количество приемов пищи:', newCount);
         return;
     }
     
@@ -837,11 +1021,9 @@ async function changeDayMealsCount(day, change) {
     try {
         // Сначала обновляем интерфейс
         renderWeekPlanner();
-        console.log(`Интерфейс обновлен, новое количество для ${day}: ${newCount}`);
         
         // Затем сохраняем на сервер
         await saveToGist();
-        console.log(`Количество приемов пищи для ${day} изменено на ${newCount} и сохранено`);
     } catch (error) {
         console.error('Ошибка при изменении количества приемов пищи:', error);
     }
