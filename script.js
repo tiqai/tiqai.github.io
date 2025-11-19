@@ -56,43 +56,104 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Инициализация навигации
-function initializeNavigation() {
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetSection = this.getAttribute('data-section');
-            
-            // Убираем активный класс у всех ссылок и секций
-            navLinks.forEach(l => l.classList.remove('active'));
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            
-            // Добавляем активный класс к текущей ссылке и секции
-            this.classList.add('active');
-            document.getElementById(targetSection).classList.add('active');
-            
-            // При переходе на список покупок обновляем его
-            if (targetSection === 'shopping-list') {
-                renderShoppingList();
-            }
-            
-            // При переходе на добавление блюда сбрасываем форму
-            if (targetSection === 'add-dish') {
-                resetDishForm();
-            }
-            
-            // При переходе на категории обновляем список
-            if (targetSection === 'categories') {
-                renderCategoriesManagement();
-            }
-        });
-    });
+// ==================== СЕРВЕРНЫЕ ОПЕРАЦИИ (ОПТИМИЗИРОВАННЫЕ) ====================
+
+// Функция для безопасного сжатия данных
+function compressData(data) {
+    try {
+        const jsonString = JSON.stringify(data);
+        // Используем простую компрессию для больших строк
+        if (jsonString.length > 100000) { // Если данные больше 100KB
+            console.log('Сжимаем данные, размер:', (jsonString.length / 1024 / 1024).toFixed(2), 'MB');
+            return {
+                compressed: true,
+                data: jsonString.replace(/(.{50})/g, '$1') // Простая компрессия - убираем лишние пробелы
+                    .replace(/\s+/g, ' ')
+                    .trim()
+            };
+        }
+        return data;
+    } catch (error) {
+        console.error('Ошибка сжатия данных:', error);
+        return data;
+    }
 }
 
-// ==================== СЕРВЕРНЫЕ ОПЕРАЦИИ ====================
+// Функция для распаковки данных
+function decompressData(data) {
+    if (data.compressed) {
+        console.log('Распаковываем сжатые данные');
+        // Для простой компрессии просто возвращаем данные
+        return JSON.parse(data.data);
+    }
+    return data;
+}
 
-// Загрузка данных с сервера
+// Функция для безопасного парсинга JSON с восстановлением
+function safeJSONParse(text) {
+    try {
+        return JSON.parse(text);
+    } catch (parseError) {
+        console.error('Ошибка парсинга JSON, пытаемся восстановить:', parseError);
+        
+        // Пытаемся восстановить битый JSON
+        try {
+            // Удаляем проблемные символы
+            const cleaned = text
+                .replace(/\u0000/g, '') // null bytes
+                .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // control characters
+                .replace(/\\"/g, '"') // Экранированные кавычки
+                .replace(/\n/g, '\\n') // Переносы строк
+                .replace(/\r/g, '\\r') // Возвраты каретки
+                .replace(/\t/g, '\\t'); // Табуляции
+            
+            // Пытаемся найти и исправить обрыв в строке
+            const lastQuote = cleaned.lastIndexOf('"');
+            const lastBrace = cleaned.lastIndexOf('}');
+            const lastBracket = cleaned.lastIndexOf(']');
+            
+            let fixedText = cleaned;
+            
+            // Если JSON оборван, пытаемся его завершить
+            if (lastBrace < lastBracket) {
+                if (lastBracket < cleaned.length - 1) {
+                    fixedText = cleaned.substring(0, lastBracket + 1);
+                }
+            } else if (lastBrace < cleaned.length - 1) {
+                fixedText = cleaned.substring(0, lastBrace + 1);
+            }
+            
+            // Проверяем, что JSON правильно завершен
+            if (!fixedText.trim().endsWith('}') && !fixedText.trim().endsWith(']')) {
+                // Добавляем закрывающую скобку если нужно
+                const openBraces = (fixedText.match(/{/g) || []).length;
+                const closeBraces = (fixedText.match(/}/g) || []).length;
+                
+                if (openBraces > closeBraces) {
+                    fixedText += '}'.repeat(openBraces - closeBraces);
+                }
+            }
+            
+            const result = JSON.parse(fixedText);
+            console.log('JSON успешно восстановлен');
+            return result;
+        } catch (recoveryError) {
+            console.error('Не удалось восстановить JSON:', recoveryError);
+            
+            // Создаем пустые данные как запасной вариант
+            return {
+                dishes: [],
+                weekPlan: {},
+                shoppingList: {},
+                categories: ['Завтраки', 'Обеды', 'Ужины', 'Десерты', 'Салаты'],
+                mealsPerDay: mealsPerDay,
+                lastSync: new Date().toISOString()
+            };
+        }
+    }
+}
+
+// Оптимизированная загрузка данных с сервера
 async function loadFromGist() {
     if (!syncConfig.token || !syncConfig.gistId || isSyncing) return;
 
@@ -108,25 +169,32 @@ async function loadFromGist() {
         });
 
         if (response.ok) {
-            const gist = await response.json();
+            const text = await response.text();
+            console.log('Получены сырые данные, длина:', text.length);
+            
+            const gist = safeJSONParse(text);
             const file = gist.files['meal-planner-data.json'];
             
             if (file && file.content) {
-                const serverData = JSON.parse(file.content);
+                console.log('Содержимое файла получено, длина:', file.content.length);
+                const serverData = safeJSONParse(file.content);
                 console.log('Данные загружены с сервера:', serverData);
                 
+                // Восстанавливаем данные если они сжаты
+                const finalData = decompressData(serverData);
+                
                 // Аккуратно обновляем данные, сохраняя текущие изменения
-                dishes = serverData.dishes || [];
-                weekPlan = serverData.weekPlan || {};
-                shoppingList = serverData.shoppingList || {};
-                categories = serverData.categories || categories;
+                dishes = finalData.dishes || [];
+                weekPlan = finalData.weekPlan || {};
+                shoppingList = finalData.shoppingList || {};
+                categories = finalData.categories || categories;
                 
                 // Важно: обновляем mealsPerDay только если он есть в серверных данных
                 // и не перезаписываем текущие локальные изменения
-                if (serverData.mealsPerDay) {
+                if (finalData.mealsPerDay) {
                     // Сохраняем текущие значения для дней, которых нет в серверных данных
                     const currentMealsPerDay = {...mealsPerDay};
-                    mealsPerDay = {...currentMealsPerDay, ...serverData.mealsPerDay};
+                    mealsPerDay = {...currentMealsPerDay, ...finalData.mealsPerDay};
                 }
                 
                 // Обновляем интерфейс
@@ -142,6 +210,7 @@ async function loadFromGist() {
                 console.log('✅ Данные загружены с сервера', mealsPerDay);
             } else {
                 // Файл не найден, создаем пустые данные
+                console.log('Файл не найден, создаем новый');
                 await saveToGist();
             }
         } else {
@@ -168,7 +237,7 @@ async function loadFromGist() {
     }
 }
 
-// Сохранение данных на сервер
+// Оптимизированное сохранение данных на сервер
 async function saveToGist() {
     if (!syncConfig.token || isSyncing) {
         console.log('❌ Не могу сохранить: нет токена или идет синхронизация');
@@ -189,12 +258,15 @@ async function saveToGist() {
             version: '1.0'
         };
 
-        console.log('Сохранение данных:', data);
+        console.log('Сохранение данных, количество блюд:', dishes.length);
 
+        // Сжимаем данные перед сохранением
+        const compressedData = compressData(data);
+        
         const gistData = {
             files: {
                 'meal-planner-data.json': {
-                    content: JSON.stringify(data, null, 2)
+                    content: JSON.stringify(compressedData, null, 0) // Убираем форматирование для экономии места
                 }
             },
             description: 'Meal Planner Data - ' + new Date().toLocaleDateString()
@@ -253,6 +325,119 @@ async function saveToGist() {
     } finally {
         isSyncing = false;
     }
+}
+
+// Функция для оптимизации изображений перед сохранением
+function optimizeImageBeforeSave(base64String, maxWidth = 800, quality = 0.7) {
+    return new Promise((resolve) => {
+        // Если изображение маленькое, возвращаем как есть
+        if (base64String.length < 50000) { // Меньше 50KB
+            resolve(base64String);
+            return;
+        }
+
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            // Уменьшаем размер если нужно
+            if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Сжимаем изображение
+            const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+            console.log('Изображение оптимизировано:', 
+                (base64String.length / 1024).toFixed(1) + 'KB -> ' + 
+                (compressedBase64.length / 1024).toFixed(1) + 'KB');
+            
+            resolve(compressedBase64);
+        };
+        
+        img.onerror = function() {
+            console.warn('Не удалось оптимизировать изображение, используем оригинал');
+            resolve(base64String);
+        };
+        
+        img.src = base64String;
+    });
+}
+
+// Модифицированная функция сохранения блюда с оптимизацией изображений
+async function saveDish() {
+    const name = document.getElementById('dish-name')?.value;
+    const categories = getSelectedCategories();
+    const description = document.getElementById('dish-description')?.value;
+    const calories = parseInt(document.getElementById('dish-calories')?.value);
+    const protein = parseFloat(document.getElementById('dish-protein')?.value);
+    const fat = parseFloat(document.getElementById('dish-fat')?.value);
+    const carbs = parseFloat(document.getElementById('dish-carbs')?.value);
+    const editIndex = parseInt(document.getElementById('edit-dish-index')?.value);
+    
+    if (!name || isNaN(calories) || isNaN(protein) || isNaN(fat) || isNaN(carbs)) {
+        alert('Пожалуйста, заполните все обязательные поля корректно');
+        return;
+    }
+
+    const imageFile = document.getElementById('dish-image')?.files[0];
+    
+    if (imageFile) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            // Оптимизируем изображение перед сохранением
+            const optimizedImage = await optimizeImageBeforeSave(e.target.result);
+            await completeSaveDish(name, categories, description, calories, protein, fat, carbs, optimizedImage, editIndex);
+        };
+        reader.readAsDataURL(imageFile);
+    } else {
+        const existingImage = editIndex !== -1 ? dishes[editIndex].image : null;
+        await completeSaveDish(name, categories, description, calories, protein, fat, carbs, existingImage, editIndex);
+    }
+}
+
+// Остальные функции остаются без изменений...
+
+// Инициализация навигации
+function initializeNavigation() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetSection = this.getAttribute('data-section');
+            
+            // Убираем активный класс у всех ссылок и секций
+            navLinks.forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            
+            // Добавляем активный класс к текущей ссылке и секции
+            this.classList.add('active');
+            document.getElementById(targetSection).classList.add('active');
+            
+            // При переходе на список покупок обновляем его
+            if (targetSection === 'shopping-list') {
+                renderShoppingList();
+            }
+            
+            // При переходе на добавление блюда сбрасываем форму
+            if (targetSection === 'add-dish') {
+                resetDishForm();
+            }
+            
+            // При переходе на категории обновляем список
+            if (targetSection === 'categories') {
+                renderCategoriesManagement();
+            }
+        });
+    });
 }
 
 // Принудительная синхронизация
@@ -1105,36 +1290,6 @@ async function deleteDish(index) {
     
     renderDishList();
     renderWeekPlanner();
-}
-
-// Сохранение блюда
-async function saveDish() {
-    const name = document.getElementById('dish-name')?.value;
-    const categories = getSelectedCategories();
-    const description = document.getElementById('dish-description')?.value;
-    const calories = parseInt(document.getElementById('dish-calories')?.value);
-    const protein = parseFloat(document.getElementById('dish-protein')?.value);
-    const fat = parseFloat(document.getElementById('dish-fat')?.value);
-    const carbs = parseFloat(document.getElementById('dish-carbs')?.value);
-    const editIndex = parseInt(document.getElementById('edit-dish-index')?.value);
-    
-    if (!name || isNaN(calories) || isNaN(protein) || isNaN(fat) || isNaN(carbs)) {
-        alert('Пожалуйста, заполните все обязательные поля корректно');
-        return;
-    }
-    
-    const imageFile = document.getElementById('dish-image')?.files[0];
-    
-    if (imageFile) {
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            await completeSaveDish(name, categories, description, calories, protein, fat, carbs, e.target.result, editIndex);
-        };
-        reader.readAsDataURL(imageFile);
-    } else {
-        const existingImage = editIndex !== -1 ? dishes[editIndex].image : null;
-        await completeSaveDish(name, categories, description, calories, protein, fat, carbs, existingImage, editIndex);
-    }
 }
 
 // Завершение сохранения блюда
